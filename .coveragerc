@@ -1,0 +1,14 @@
+[run]
+omit = 
+    src/tests/*
+    *__init__.py
+    #exclude non core elements
+    src/drivers/misc/dumper.py
+    src/drivers/misc/logger.py
+    src/drivers/misc/status.py
+    #exclude out of scope driver skeletons
+    src/drivers/mel_scanner.py
+    src/drivers/ip_camera.py
+    #eclude test codes
+    src/tools/*
+    

@@ -1,0 +1,38 @@
+<html><head><title>Epydoc Redirect Page</title>
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="pragma" content="no-cache" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+<!--
+var pages = ["src.drivers.uepsilon_scanner.uEpsilon_Driver-c", "src.drivers.uepsilon_scanner.ScanningMode-c", "src.drivers.mel_scanner.MEL_M2D_Driver-c", "src.drivers.hyundai_robot.RobotStates-c", "src.drivers.misc.udp.MessageQueueItem-c", "src.drivers.mel_scanner.ScanningMode-c", "src.drivers.nachi_robot.RobotStates-c", "src.drivers.hyundai_robot.Commands-c", "src.drivers.misc.udp.UdpConnector-c", "src.drivers.nachi_robot.Commands-c", "src.drivers.udp.MessageQueueItem-c", "src.drivers.misc.dumper.Reading-c", "src.drivers.otc_wps.InputParams-c", "src.drivers.ip_camera.IPCamera-c", "src.drivers.misc.status.STATE-c", "src.drivers.uepsilon_scanner-m", "src.drivers.otc_wps.Commands-c", "src.drivers.udp.UdpConnector-c", "src.drivers.hyundai_robot-m", "src.drivers.move_it_robot-m", "src.drivers.mel_scanner-m", "src.drivers.misc.dumper-m", "src.drivers.misc.logger-m", "src.drivers.misc.status-m", "src.drivers.nachi_robot-m", "src.drivers.ip_camera-m", "src.drivers.misc.udp-m", "src.drivers.otc_wps-m", "src.drivers.misc-m", "src.drivers.udp-m", "src.drivers-m"];
+var dottedName = get_anchor();
+if (dottedName) {
+    var target = redirect_url(dottedName);
+    if (target) window.location.replace(target);
+}
+// -->
+</script>
+
+<h3>Epydoc Auto-redirect page</h3>
+
+<p>When javascript is enabled, this page will redirect URLs of
+the form <tt>redirect.html#<i>dotted.name</i></tt> to the
+documentation for the object with the given fully-qualified
+dotted name.</p>
+<p><a id="message"> &nbsp; </a></p>
+
+<script type="text/javascript">
+<!--
+if (dottedName) {
+    var msg = document.getElementById("message");
+    msg.innerHTML = "No documentation found for <tt>"+
+                    dottedName+"</tt>";
+}
+// -->
+</script>
+
+</body>
+</html>

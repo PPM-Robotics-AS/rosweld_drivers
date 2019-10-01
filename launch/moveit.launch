@@ -1,0 +1,11 @@
+<launch>
+    <arg name="robot_name" />
+    <arg name="move_group_name" default="welding" />
+
+    <param name="robot_name" value="$(arg robot_name)"/>
+    <param name="move_group_name" value="$(arg move_group_name)"/>
+
+    <node respawn="true" pkg="rosweld_drivers" name="move_it_robot" type="moveit.sh" output="screen" >
+    </node>
+    
+</launch>

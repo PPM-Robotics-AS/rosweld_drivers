@@ -1,0 +1,9 @@
+float32 voltage
+float32 amperage
+float32 filler_speed
+float32 default_arc_length
+int32 speed
+int32 mode
+int32 job_number
+int32 is_arc_on
+string error

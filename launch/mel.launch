@@ -1,0 +1,27 @@
+<launch>
+
+    <arg name="port" default="3000" />  
+    <arg name="ip" />
+    <arg name="laser_name" default="laser_scanner" />
+    <arg name="dump_size" default="10" />
+    <arg name="trigger_robot_name" default="nachi_robot" />
+    <arg name="laser_tcp" default="scanner" />
+    <arg name="log_dir" default="/home/ubuntu/laser_log" />
+
+    <node respawn="true" respawn_delay="30" pkg="rosweld_drivers" name="laser_scanner" type="mel.sh" output="screen" >
+        <param name="laser_name" value="$(arg laser_name)"/>
+        <param name="port" value="$(arg port)"/>
+        <param name="ip" value="$(arg ip)"/>
+        <param name="trigger_robot_name" value="$(arg trigger_robot_name)"/>
+        <param name="laser_tcp" value="$(arg laser_tcp)"/>
+        <param name="serial" value="$(arg serial)"/>
+        <param name="resolution" value="$(arg resolution)"/>
+    </node>
+
+    <node respawn="true" pkg="rosweld_drivers" name="laser_dumper" type="dumper.sh" output="screen">
+        <param name="dump_size" value="$(arg dump_size)"/>
+        <param name="trigger_robot_name" value="$(arg trigger_robot_name)"/>
+        <param name="log_dir" value="$(arg log_dir)"/>
+    </node>
+
+</launch>

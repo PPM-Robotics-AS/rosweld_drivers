@@ -1,0 +1,15 @@
+<launch>
+
+    <arg name="port" default="8002" />  
+    <arg name="ip" />
+    <arg name="wps_name" />
+
+    <param name="ip" value="$(arg ip)"/>
+    <param name="port" value="$(arg port)"/>
+    <param name="wps_name" value="$(arg wps_name)"/>
+
+    <node respawn="true" pkg="rosweld_drivers" name="otc_welding_driver" type="otcwps.sh" output="screen">
+        
+    </node>
+
+</launch>

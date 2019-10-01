@@ -1,0 +1,13 @@
+<launch>
+
+  <arg name="url" />
+  <arg name="topic" />
+  <arg name="fps"  />
+  <arg name="username" />
+  <arg name="password" />
+  <arg name="name" />
+
+  <!-- Start the camera with the script -->
+  <node respawn="true" pkg="rosweld_drivers" name="$(arg name)" type="camera.sh" args="$(arg url) $(arg topic) $(arg username) $(arg password) $(arg fps)" output="screen" />
+
+</launch>

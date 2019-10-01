@@ -1,0 +1,7 @@
+*.pyc
+__pycache__
+laser_driver-*.txt
+src/tests/tester.py
+.coverage
+pylint.log
+ASDA1ARCW.*

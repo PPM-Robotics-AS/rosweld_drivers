@@ -1,0 +1,18 @@
+<launch>
+
+    <arg name="update_port" default="12350" />  
+    <arg name="command_port" default="12340" />  
+    <arg name="local_port" default="12349" />  
+    <arg name="ip" />
+    <arg name="robot_name" />
+
+    <param name="robot_ip" value="$(arg ip)"/>
+    <param name="robot_update_port" value="$(arg update_port)"/>
+    <param name="robot_command_port" value="$(arg command_port)"/>
+    <param name="udp_local_port" value="$(arg local_port)"/>
+    <param name="robot_name" value="$(arg robot_name)"/>
+
+    <node respawn="true" pkg="rosweld_drivers" name="hyundai_robot" type="hyundai.sh" output="screen">
+    
+    </node>
+</launch>

@@ -1,0 +1,1002 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>src.drivers.otc_wps</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="src.drivers-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        Package&nbsp;src ::
+        <a href="src.drivers-module.html">Package&nbsp;drivers</a> ::
+        Module&nbsp;otc_wps
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="src.drivers.otc_wps-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="src.drivers.otc_wps-module.html">Module src.drivers.otc_wps</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno">  1</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">configparser</tt> </tt>
+<a name="L2"></a><tt class="py-lineno">  2</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">cStringIO</tt> </tt>
+<a name="L3"></a><tt class="py-lineno">  3</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">ftplib</tt> </tt>
+<a name="L4"></a><tt class="py-lineno">  4</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">os</tt> </tt>
+<a name="L5"></a><tt class="py-lineno">  5</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">sys</tt> </tt>
+<a name="L6"></a><tt class="py-lineno">  6</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">copy</tt> <tt class="py-keyword">import</tt> <tt class="py-name">deepcopy</tt> </tt>
+<a name="L7"></a><tt class="py-lineno">  7</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">ftplib</tt> <tt class="py-keyword">import</tt> <tt class="py-name">FTP</tt> </tt>
+<a name="L8"></a><tt class="py-lineno">  8</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">struct</tt> <tt class="py-keyword">import</tt> <tt class="py-name">pack</tt><tt class="py-op">,</tt> <tt class="py-name">unpack</tt> </tt>
+<a name="L9"></a><tt class="py-lineno">  9</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">threading</tt> <tt class="py-keyword">import</tt> <tt class="py-name">Thread</tt><tt class="py-op">,</tt> <tt class="py-name">currentThread</tt> </tt>
+<a name="L10"></a><tt class="py-lineno"> 10</tt>  <tt class="py-line"> </tt>
+<a name="L11"></a><tt class="py-lineno"> 11</tt>  <tt class="py-line"><tt class="py-keyword">import</tt> <tt class="py-name">rospy</tt> </tt>
+<a name="L12"></a><tt class="py-lineno"> 12</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">rosweld_drivers</tt><tt class="py-op">.</tt><tt class="py-name">msg</tt> <tt class="py-keyword">import</tt> <tt class="py-name">WeldingJobs</tt><tt class="py-op">,</tt> <tt class="py-name">WeldingState</tt> </tt>
+<a name="L13"></a><tt class="py-lineno"> 13</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">rosweld_drivers</tt><tt class="py-op">.</tt><tt class="py-name">srv</tt> <tt class="py-keyword">import</tt> <tt class="py-op">(</tt><tt class="py-name">Input</tt><tt class="py-op">,</tt> <tt class="py-name">SetJobNumber</tt><tt class="py-op">,</tt> <tt class="py-name">SetJobNumberResponse</tt><tt class="py-op">,</tt> </tt>
+<a name="L14"></a><tt class="py-lineno"> 14</tt>  <tt class="py-line">                                 <tt class="py-name">SetWeldingParameters</tt><tt class="py-op">,</tt> <tt class="py-name">SetWeldingParametersResponse</tt><tt class="py-op">)</tt> </tt>
+<a name="L15"></a><tt class="py-lineno"> 15</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">std_srvs</tt><tt class="py-op">.</tt><tt class="py-name">srv</tt> <tt class="py-keyword">import</tt> <tt class="py-name">Empty</tt><tt class="py-op">,</tt> <tt class="py-name">EmptyResponse</tt> </tt>
+<a name="L16"></a><tt class="py-lineno"> 16</tt>  <tt class="py-line"> </tt>
+<a name="L17"></a><tt class="py-lineno"> 17</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">src</tt><tt class="py-op">.</tt><tt id="link-0" class="py-name" targets="Package src.drivers=src.drivers-module.html"><a title="src.drivers" class="py-name" href="#" onclick="return doclink('link-0', 'drivers', 'link-0');">drivers</a></tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Package src.drivers.misc=src.drivers.misc-module.html"><a title="src.drivers.misc" class="py-name" href="#" onclick="return doclink('link-1', 'misc', 'link-1');">misc</a></tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Module src.drivers.misc.status=src.drivers.misc.status-module.html,Function src.drivers.misc.status.status()=src.drivers.misc.status-module.html#status"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-2', 'status', 'link-2');">status</a></tt> <tt class="py-keyword">import</tt> <tt id="link-3" class="py-name" targets="Class src.drivers.misc.status.STATE=src.drivers.misc.status.STATE-class.html"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-3', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">,</tt> <tt id="link-4" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-4', 'status', 'link-2');">status</a></tt> </tt>
+<a name="L18"></a><tt class="py-lineno"> 18</tt>  <tt class="py-line"><tt class="py-keyword">from</tt> <tt class="py-name">src</tt><tt class="py-op">.</tt><tt id="link-5" class="py-name"><a title="src.drivers" class="py-name" href="#" onclick="return doclink('link-5', 'drivers', 'link-0');">drivers</a></tt><tt class="py-op">.</tt><tt id="link-6" class="py-name"><a title="src.drivers.misc" class="py-name" href="#" onclick="return doclink('link-6', 'misc', 'link-1');">misc</a></tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Variable src.drivers.hyundai_robot.udp=src.drivers.hyundai_robot-module.html#udp,Module src.drivers.misc.udp=src.drivers.misc.udp-module.html,Variable src.drivers.nachi_robot.udp=src.drivers.nachi_robot-module.html#udp,Variable src.drivers.otc_wps.udp=src.drivers.otc_wps-module.html#udp,Module src.drivers.udp=src.drivers.udp-module.html"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-7', 'udp', 'link-7');">udp</a></tt> <tt class="py-keyword">import</tt> <tt id="link-8" class="py-name" targets="Class src.drivers.misc.udp.UdpConnector=src.drivers.misc.udp.UdpConnector-class.html,Class src.drivers.udp.UdpConnector=src.drivers.udp.UdpConnector-class.html"><a title="src.drivers.misc.udp.UdpConnector
+src.drivers.udp.UdpConnector" class="py-name" href="#" onclick="return doclink('link-8', 'UdpConnector', 'link-8');">UdpConnector</a></tt> </tt>
+<a name="L19"></a><tt class="py-lineno"> 19</tt>  <tt class="py-line"> </tt>
+<a name="L20"></a><tt class="py-lineno"> 20</tt>  <tt class="py-line"><tt id="link-9" class="py-name" targets="Variable src.drivers.otc_wps.thread_config_update=src.drivers.otc_wps-module.html#thread_config_update"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-9', 'thread_config_update', 'link-9');">thread_config_update</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L21"></a><tt class="py-lineno"> 21</tt>  <tt class="py-line"><tt id="link-10" class="py-name" targets="Variable src.drivers.otc_wps.thread_state_update=src.drivers.otc_wps-module.html#thread_state_update"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-10', 'thread_state_update', 'link-10');">thread_state_update</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L22"></a><tt class="py-lineno"> 22</tt>  <tt class="py-line"> </tt>
+<a name="L23"></a><tt class="py-lineno"> 23</tt>  <tt class="py-line"><tt class="py-comment"># UDP Handler</tt> </tt>
+<a name="L24"></a><tt class="py-lineno"> 24</tt>  <tt class="py-line"><tt id="link-11" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-11', 'udp', 'link-7');">udp</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L25"></a><tt class="py-lineno"> 25</tt>  <tt class="py-line"><tt class="py-comment"># Update response received</tt> </tt>
+<a name="L26"></a><tt class="py-lineno"> 26</tt>  <tt class="py-line"><tt id="link-12" class="py-name" targets="Variable src.drivers.hyundai_robot.update_response=src.drivers.hyundai_robot-module.html#update_response,Variable src.drivers.nachi_robot.update_response=src.drivers.nachi_robot-module.html#update_response,Variable src.drivers.otc_wps.update_response=src.drivers.otc_wps-module.html#update_response"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-12', 'update_response', 'link-12');">update_response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L27"></a><tt class="py-lineno"> 27</tt>  <tt class="py-line"><tt class="py-comment"># The ip address of the WPS</tt> </tt>
+<a name="L28"></a><tt class="py-lineno"> 28</tt>  <tt class="py-line"><tt id="link-13" class="py-name" targets="Variable src.drivers.hyundai_robot.host=src.drivers.hyundai_robot-module.html#host,Variable src.drivers.nachi_robot.host=src.drivers.nachi_robot-module.html#host,Variable src.drivers.otc_wps.host=src.drivers.otc_wps-module.html#host"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-13', 'host', 'link-13');">host</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L29"></a><tt class="py-lineno"> 29</tt>  <tt class="py-line"><tt class="py-comment"># The TCP port of the WPS</tt> </tt>
+<a name="L30"></a><tt class="py-lineno"> 30</tt>  <tt class="py-line"><tt id="link-14" class="py-name" targets="Variable src.drivers.nachi_robot.port=src.drivers.nachi_robot-module.html#port,Variable src.drivers.otc_wps.port=src.drivers.otc_wps-module.html#port"><a title="src.drivers.nachi_robot.port
+src.drivers.otc_wps.port" class="py-name" href="#" onclick="return doclink('link-14', 'port', 'link-14');">port</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L31"></a><tt class="py-lineno"> 31</tt>  <tt class="py-line"><tt class="py-comment"># Available jobs on the robot</tt> </tt>
+<a name="L32"></a><tt class="py-lineno"> 32</tt>  <tt class="py-line"><tt id="link-15" class="py-name" targets="Variable src.drivers.otc_wps.jobs=src.drivers.otc_wps-module.html#jobs"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-15', 'jobs', 'link-15');">jobs</a></tt> <tt class="py-op">=</tt> <tt class="py-op">{</tt><tt class="py-op">}</tt> </tt>
+<a name="L33"></a><tt class="py-lineno"> 33</tt>  <tt class="py-line"><tt class="py-comment"># Current job number</tt> </tt>
+<a name="L34"></a><tt class="py-lineno"> 34</tt>  <tt class="py-line"><tt id="link-16" class="py-name" targets="Variable src.drivers.otc_wps.current_job_idx=src.drivers.otc_wps-module.html#current_job_idx"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-16', 'current_job_idx', 'link-16');">current_job_idx</a></tt> <tt class="py-op">=</tt> <tt class="py-op">-</tt><tt class="py-number">1</tt> </tt>
+<a name="L35"></a><tt class="py-lineno"> 35</tt>  <tt class="py-line"><tt class="py-comment"># Path of the job files on the WPS</tt> </tt>
+<a name="L36"></a><tt class="py-lineno"> 36</tt>  <tt class="py-line"><tt id="link-17" class="py-name" targets="Variable src.drivers.otc_wps.jobs_pathname=src.drivers.otc_wps-module.html#jobs_pathname"><a title="src.drivers.otc_wps.jobs_pathname" class="py-name" href="#" onclick="return doclink('link-17', 'jobs_pathname', 'link-17');">jobs_pathname</a></tt> <tt class="py-op">=</tt> <tt class="py-string">'/A_APPLICATION/AS'</tt> </tt>
+<a name="L37"></a><tt class="py-lineno"> 37</tt>  <tt class="py-line"><tt class="py-comment"># WPS Storage</tt> </tt>
+<a name="L38"></a><tt class="py-lineno"> 38</tt>  <tt class="py-line"><tt id="link-18" class="py-name" targets="Variable src.drivers.otc_wps.ftp=src.drivers.otc_wps-module.html#ftp"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-18', 'ftp', 'link-18');">ftp</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L39"></a><tt class="py-lineno"> 39</tt>  <tt class="py-line"><tt class="py-comment"># Defeault file names</tt> </tt>
+<a name="L40"></a><tt class="py-lineno"> 40</tt>  <tt class="py-line"><tt id="link-19" class="py-name" targets="Variable src.drivers.otc_wps.file_name=src.drivers.otc_wps-module.html#file_name"><a title="src.drivers.otc_wps.file_name" class="py-name" href="#" onclick="return doclink('link-19', 'file_name', 'link-19');">file_name</a></tt> <tt class="py-op">=</tt> <tt class="py-string">"ASDA1ARCW"</tt> </tt>
+<a name="L41"></a><tt class="py-lineno"> 41</tt>  <tt class="py-line"><tt class="py-comment"># Auto update of the config</tt> </tt>
+<a name="L42"></a><tt class="py-lineno"> 42</tt>  <tt class="py-line"><tt id="link-20" class="py-name" targets="Variable src.drivers.otc_wps.auto_update=src.drivers.otc_wps-module.html#auto_update"><a title="src.drivers.otc_wps.auto_update" class="py-name" href="#" onclick="return doclink('link-20', 'auto_update', 'link-20');">auto_update</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L43"></a><tt class="py-lineno"> 43</tt>  <tt class="py-line"><tt class="py-comment"># Is arc on</tt> </tt>
+<a name="L44"></a><tt class="py-lineno"> 44</tt>  <tt class="py-line"><tt id="link-21" class="py-name" targets="Variable src.drivers.otc_wps.is_arc_on=src.drivers.otc_wps-module.html#is_arc_on"><a title="src.drivers.otc_wps.is_arc_on" class="py-name" href="#" onclick="return doclink('link-21', 'is_arc_on', 'link-21');">is_arc_on</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L45"></a><tt class="py-lineno"> 45</tt>  <tt class="py-line"><tt class="py-comment"># Current WPS values</tt> </tt>
+<a name="L46"></a><tt class="py-lineno"> 46</tt>  <tt class="py-line"><tt id="link-22" class="py-name" targets="Variable src.drivers.otc_wps.current_values=src.drivers.otc_wps-module.html#current_values"><a title="src.drivers.otc_wps.current_values" class="py-name" href="#" onclick="return doclink('link-22', 'current_values', 'link-22');">current_values</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L47"></a><tt class="py-lineno"> 47</tt>  <tt class="py-line"><tt class="py-comment"># Current job values</tt> </tt>
+<a name="L48"></a><tt class="py-lineno"> 48</tt>  <tt class="py-line"><tt id="link-23" class="py-name" targets="Variable src.drivers.otc_wps.current_job=src.drivers.otc_wps-module.html#current_job"><a title="src.drivers.otc_wps.current_job" class="py-name" href="#" onclick="return doclink('link-23', 'current_job', 'link-23');">current_job</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L49"></a><tt class="py-lineno"> 49</tt>  <tt class="py-line"><tt class="py-comment"># Define driver global params</tt> </tt>
+<a name="L50"></a><tt class="py-lineno"> 50</tt>  <tt class="py-line"><tt id="link-24" class="py-name" targets="Variable src.drivers.otc_wps.t_config=src.drivers.otc_wps-module.html#t_config"><a title="src.drivers.otc_wps.t_config" class="py-name" href="#" onclick="return doclink('link-24', 't_config', 'link-24');">t_config</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L51"></a><tt class="py-lineno"> 51</tt>  <tt class="py-line"><tt id="link-25" class="py-name" targets="Variable src.drivers.otc_wps.t_sp_params=src.drivers.otc_wps-module.html#t_sp_params"><a title="src.drivers.otc_wps.t_sp_params" class="py-name" href="#" onclick="return doclink('link-25', 't_sp_params', 'link-25');">t_sp_params</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L52"></a><tt class="py-lineno"> 52</tt>  <tt class="py-line"><tt id="link-26" class="py-name" targets="Variable src.drivers.otc_wps.t_current_params=src.drivers.otc_wps-module.html#t_current_params"><a title="src.drivers.otc_wps.t_current_params" class="py-name" href="#" onclick="return doclink('link-26', 't_current_params', 'link-26');">t_current_params</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L53"></a><tt class="py-lineno"> 53</tt>  <tt class="py-line"><tt class="py-comment"># Node name</tt> </tt>
+<a name="L54"></a><tt class="py-lineno"> 54</tt>  <tt class="py-line"><tt id="link-27" class="py-name" targets="Variable src.drivers.hyundai_robot.name=src.drivers.hyundai_robot-module.html#name,Variable src.drivers.misc.dumper.name=src.drivers.misc.dumper-module.html#name,Variable src.drivers.move_it_robot.name=src.drivers.move_it_robot-module.html#name,Variable src.drivers.nachi_robot.name=src.drivers.nachi_robot-module.html#name,Variable src.drivers.otc_wps.name=src.drivers.otc_wps-module.html#name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-27', 'name', 'link-27');">name</a></tt> <tt class="py-op">=</tt> <tt class="py-name">None</tt> </tt>
+<a name="L55"></a><tt class="py-lineno"> 55</tt>  <tt class="py-line"> </tt>
+<a name="L56"></a><tt class="py-lineno"> 56</tt>  <tt class="py-line"><tt class="py-comment"># WPS commands enum</tt> </tt>
+<a name="L57"></a><tt class="py-lineno"> 57</tt>  <tt class="py-line"><tt class="py-comment">#</tt> </tt>
+<a name="L58"></a><tt class="py-lineno"> 58</tt>  <tt class="py-line"><tt class="py-comment"># Helps to identify wps command codes</tt> </tt>
+<a name="L59"></a><tt class="py-lineno"> 59</tt>  <tt class="py-line"> </tt>
+<a name="L60"></a><tt class="py-lineno"> 60</tt>  <tt class="py-line"> </tt>
+<a name="Commands"></a><div id="Commands-def"><a name="L61"></a><tt class="py-lineno"> 61</tt> <a class="py-toggle" href="#" id="Commands-toggle" onclick="return toggle('Commands');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="src.drivers.otc_wps.Commands-class.html">Commands</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Commands-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="Commands-expanded"><a name="L62"></a><tt class="py-lineno"> 62</tt>  <tt class="py-line">    <tt class="py-docstring">"""WPS commands enum</tt> </tt>
+<a name="L63"></a><tt class="py-lineno"> 63</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L64"></a><tt class="py-lineno"> 64</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L65"></a><tt class="py-lineno"> 65</tt>  <tt class="py-line"><tt class="py-docstring">        object {object} -- parent class</tt> </tt>
+<a name="L66"></a><tt class="py-lineno"> 66</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L67"></a><tt class="py-lineno"> 67</tt>  <tt class="py-line"> </tt>
+<a name="L68"></a><tt class="py-lineno"> 68</tt>  <tt class="py-line">    <tt id="link-28" class="py-name" targets="Variable src.drivers.hyundai_robot.Commands.update=src.drivers.hyundai_robot.Commands-class.html#update,Function src.drivers.hyundai_robot.update()=src.drivers.hyundai_robot-module.html#update,Method src.drivers.mel_scanner.MEL_M2D_Driver.update()=src.drivers.mel_scanner.MEL_M2D_Driver-class.html#update,Function src.drivers.move_it_robot.update()=src.drivers.move_it_robot-module.html#update,Variable src.drivers.nachi_robot.Commands.update=src.drivers.nachi_robot.Commands-class.html#update,Function src.drivers.nachi_robot.update()=src.drivers.nachi_robot-module.html#update,Variable src.drivers.otc_wps.Commands.update=src.drivers.otc_wps.Commands-class.html#update"><a title="src.drivers.hyundai_robot.Commands.update
+src.drivers.hyundai_robot.update
+src.drivers.mel_scanner.MEL_M2D_Driver.update
+src.drivers.move_it_robot.update
+src.drivers.nachi_robot.Commands.update
+src.drivers.nachi_robot.update
+src.drivers.otc_wps.Commands.update" class="py-name" href="#" onclick="return doclink('link-28', 'update', 'link-28');">update</a></tt> <tt class="py-op">=</tt> <tt class="py-number">0</tt> </tt>
+<a name="L69"></a><tt class="py-lineno"> 69</tt>  <tt class="py-line">    <tt id="link-29" class="py-name" targets="Variable src.drivers.otc_wps.Commands.arc_start=src.drivers.otc_wps.Commands-class.html#arc_start,Function src.drivers.otc_wps.arc_start()=src.drivers.otc_wps-module.html#arc_start"><a title="src.drivers.otc_wps.Commands.arc_start
+src.drivers.otc_wps.arc_start" class="py-name" href="#" onclick="return doclink('link-29', 'arc_start', 'link-29');">arc_start</a></tt> <tt class="py-op">=</tt> <tt class="py-number">1</tt> </tt>
+<a name="L70"></a><tt class="py-lineno"> 70</tt>  <tt class="py-line">    <tt id="link-30" class="py-name" targets="Variable src.drivers.otc_wps.Commands.arc_stop=src.drivers.otc_wps.Commands-class.html#arc_stop,Function src.drivers.otc_wps.arc_stop()=src.drivers.otc_wps-module.html#arc_stop"><a title="src.drivers.otc_wps.Commands.arc_stop
+src.drivers.otc_wps.arc_stop" class="py-name" href="#" onclick="return doclink('link-30', 'arc_stop', 'link-30');">arc_stop</a></tt> <tt class="py-op">=</tt> <tt class="py-number">2</tt> </tt>
+<a name="L71"></a><tt class="py-lineno"> 71</tt>  <tt class="py-line">    <tt id="link-31" class="py-name" targets="Variable src.drivers.otc_wps.Commands.arc_update=src.drivers.otc_wps.Commands-class.html#arc_update"><a title="src.drivers.otc_wps.Commands.arc_update" class="py-name" href="#" onclick="return doclink('link-31', 'arc_update', 'link-31');">arc_update</a></tt> <tt class="py-op">=</tt> <tt class="py-number">3</tt> </tt>
+<a name="L72"></a><tt class="py-lineno"> 72</tt>  <tt class="py-line">    <tt id="link-32" class="py-name" targets="Variable src.drivers.otc_wps.Commands.set_job_number=src.drivers.otc_wps.Commands-class.html#set_job_number,Function src.drivers.otc_wps.set_job_number()=src.drivers.otc_wps-module.html#set_job_number"><a title="src.drivers.otc_wps.Commands.set_job_number
+src.drivers.otc_wps.set_job_number" class="py-name" href="#" onclick="return doclink('link-32', 'set_job_number', 'link-32');">set_job_number</a></tt> <tt class="py-op">=</tt> <tt class="py-number">4</tt> </tt>
+</div><a name="L73"></a><tt class="py-lineno"> 73</tt>  <tt class="py-line"> </tt>
+<a name="L74"></a><tt class="py-lineno"> 74</tt>  <tt class="py-line"> </tt>
+<a name="InputParams"></a><div id="InputParams-def"><a name="L75"></a><tt class="py-lineno"> 75</tt> <a class="py-toggle" href="#" id="InputParams-toggle" onclick="return toggle('InputParams');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="src.drivers.otc_wps.InputParams-class.html">InputParams</a><tt class="py-op">(</tt><tt class="py-base-class">object</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="InputParams-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="InputParams-expanded"><a name="L76"></a><tt class="py-lineno"> 76</tt>  <tt class="py-line">    <tt class="py-docstring">"""Input params commands enum</tt> </tt>
+<a name="L77"></a><tt class="py-lineno"> 77</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L78"></a><tt class="py-lineno"> 78</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L79"></a><tt class="py-lineno"> 79</tt>  <tt class="py-line"><tt class="py-docstring">        object {object} -- parent class</tt> </tt>
+<a name="L80"></a><tt class="py-lineno"> 80</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L81"></a><tt class="py-lineno"> 81</tt>  <tt class="py-line"> </tt>
+<a name="L82"></a><tt class="py-lineno"> 82</tt>  <tt class="py-line">    <tt id="link-33" class="py-name" targets="Variable src.drivers.otc_wps.InputParams.voltage=src.drivers.otc_wps.InputParams-class.html#voltage"><a title="src.drivers.otc_wps.InputParams.voltage" class="py-name" href="#" onclick="return doclink('link-33', 'voltage', 'link-33');">voltage</a></tt> <tt class="py-op">=</tt> <tt class="py-number">0</tt> </tt>
+<a name="L83"></a><tt class="py-lineno"> 83</tt>  <tt class="py-line">    <tt id="link-34" class="py-name" targets="Variable src.drivers.otc_wps.InputParams.amperage=src.drivers.otc_wps.InputParams-class.html#amperage"><a title="src.drivers.otc_wps.InputParams.amperage" class="py-name" href="#" onclick="return doclink('link-34', 'amperage', 'link-34');">amperage</a></tt> <tt class="py-op">=</tt> <tt class="py-number">1</tt> </tt>
+<a name="L84"></a><tt class="py-lineno"> 84</tt>  <tt class="py-line">    <tt id="link-35" class="py-name" targets="Variable src.drivers.otc_wps.InputParams.feed_speed=src.drivers.otc_wps.InputParams-class.html#feed_speed"><a title="src.drivers.otc_wps.InputParams.feed_speed" class="py-name" href="#" onclick="return doclink('link-35', 'feed_speed', 'link-35');">feed_speed</a></tt> <tt class="py-op">=</tt> <tt class="py-number">2</tt> </tt>
+<a name="L85"></a><tt class="py-lineno"> 85</tt>  <tt class="py-line">    <tt id="link-36" class="py-name" targets="Variable src.drivers.otc_wps.InputParams.arc_length=src.drivers.otc_wps.InputParams-class.html#arc_length"><a title="src.drivers.otc_wps.InputParams.arc_length" class="py-name" href="#" onclick="return doclink('link-36', 'arc_length', 'link-36');">arc_length</a></tt> <tt class="py-op">=</tt> <tt class="py-number">3</tt> </tt>
+</div><a name="L86"></a><tt class="py-lineno"> 86</tt>  <tt class="py-line"> </tt>
+<a name="L87"></a><tt class="py-lineno"> 87</tt>  <tt class="py-line"> </tt>
+<a name="parse_job"></a><div id="parse_job-def"><a name="L88"></a><tt class="py-lineno"> 88</tt> <a class="py-toggle" href="#" id="parse_job-toggle" onclick="return toggle('parse_job');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#parse_job">parse_job</a><tt class="py-op">(</tt><tt class="py-param">cfg</tt><tt class="py-op">,</tt> <tt class="py-param">nr</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="parse_job-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="parse_job-expanded"><a name="L89"></a><tt class="py-lineno"> 89</tt>  <tt class="py-line">    <tt class="py-docstring">"""Parse a given config to WeldingState</tt> </tt>
+<a name="L90"></a><tt class="py-lineno"> 90</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L91"></a><tt class="py-lineno"> 91</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L92"></a><tt class="py-lineno"> 92</tt>  <tt class="py-line"><tt class="py-docstring">        cfg {dict} -- configuration dictionary</tt> </tt>
+<a name="L93"></a><tt class="py-lineno"> 93</tt>  <tt class="py-line"><tt class="py-docstring">        nr {int32} -- config number</tt> </tt>
+<a name="L94"></a><tt class="py-lineno"> 94</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L95"></a><tt class="py-lineno"> 95</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L96"></a><tt class="py-lineno"> 96</tt>  <tt class="py-line"><tt class="py-docstring">        WeldingState -- welding state</tt> </tt>
+<a name="L97"></a><tt class="py-lineno"> 97</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L98"></a><tt class="py-lineno"> 98</tt>  <tt class="py-line"> </tt>
+<a name="L99"></a><tt class="py-lineno"> 99</tt>  <tt class="py-line">    <tt class="py-name">wp</tt> <tt class="py-op">=</tt> <tt class="py-name">WeldingState</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L100"></a><tt class="py-lineno">100</tt>  <tt class="py-line">    <tt class="py-name">wp</tt><tt class="py-op">.</tt><tt id="link-37" class="py-name"><a title="src.drivers.otc_wps.InputParams.amperage" class="py-name" href="#" onclick="return doclink('link-37', 'amperage', 'link-34');">amperage</a></tt> <tt class="py-op">=</tt> <tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">cfg</tt><tt class="py-op">[</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">]</tt><tt class="py-op">[</tt><tt class="py-string">"A_CURRENT"</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L101"></a><tt class="py-lineno">101</tt>  <tt class="py-line">    <tt class="py-name">wp</tt><tt class="py-op">.</tt><tt class="py-name">job_number</tt> <tt class="py-op">=</tt> <tt class="py-name">nr</tt> </tt>
+<a name="L102"></a><tt class="py-lineno">102</tt>  <tt class="py-line">    <tt class="py-name">wp</tt><tt class="py-op">.</tt><tt class="py-name">filler_speed</tt> <tt class="py-op">=</tt> <tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">cfg</tt><tt class="py-op">[</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">]</tt><tt class="py-op">[</tt><tt class="py-string">"A_FILLER_SPEED"</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L103"></a><tt class="py-lineno">103</tt>  <tt class="py-line">    <tt class="py-name">wp</tt><tt class="py-op">.</tt><tt class="py-name">mode</tt> <tt class="py-op">=</tt> <tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">cfg</tt><tt class="py-op">[</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">]</tt><tt class="py-op">[</tt><tt class="py-string">"A_CURRENT_OUTPUT"</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L104"></a><tt class="py-lineno">104</tt>  <tt class="py-line">    <tt class="py-name">wp</tt><tt class="py-op">.</tt><tt id="link-38" class="py-name" targets="Variable src.drivers.move_it_robot.speed=src.drivers.move_it_robot-module.html#speed"><a title="src.drivers.move_it_robot.speed" class="py-name" href="#" onclick="return doclink('link-38', 'speed', 'link-38');">speed</a></tt> <tt class="py-op">=</tt> <tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">float</tt><tt class="py-op">(</tt><tt class="py-name">cfg</tt><tt class="py-op">[</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">]</tt><tt class="py-op">[</tt><tt class="py-string">"A_SPEED"</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L105"></a><tt class="py-lineno">105</tt>  <tt class="py-line"> </tt>
+<a name="L106"></a><tt class="py-lineno">106</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">wp</tt> </tt>
+</div><a name="L107"></a><tt class="py-lineno">107</tt>  <tt class="py-line"> </tt>
+<a name="L108"></a><tt class="py-lineno">108</tt>  <tt class="py-line"> </tt>
+<a name="update_jobs"></a><div id="update_jobs-def"><a name="L109"></a><tt class="py-lineno">109</tt> <a class="py-toggle" href="#" id="update_jobs-toggle" onclick="return toggle('update_jobs');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#update_jobs">update_jobs</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="update_jobs-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="update_jobs-expanded"><a name="L110"></a><tt class="py-lineno">110</tt>  <tt class="py-line">    <tt class="py-docstring">"""Download the config files from the WPS</tt> </tt>
+<a name="L111"></a><tt class="py-lineno">111</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L112"></a><tt class="py-lineno">112</tt>  <tt class="py-line"><tt class="py-docstring">       Parses the downladed parameters</tt> </tt>
+<a name="L113"></a><tt class="py-lineno">113</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L114"></a><tt class="py-lineno">114</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L115"></a><tt class="py-lineno">115</tt>  <tt class="py-line"><tt class="py-docstring">        WeldingState[] -- welding jobs</tt> </tt>
+<a name="L116"></a><tt class="py-lineno">116</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L117"></a><tt class="py-lineno">117</tt>  <tt class="py-line"> </tt>
+<a name="L118"></a><tt class="py-lineno">118</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-39" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-39', 'ftp', 'link-18');">ftp</a></tt> </tt>
+<a name="L119"></a><tt class="py-lineno">119</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-40" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-40', 'jobs', 'link-15');">jobs</a></tt> </tt>
+<a name="L120"></a><tt class="py-lineno">120</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-41" class="py-name"><a title="src.drivers.otc_wps.file_name" class="py-name" href="#" onclick="return doclink('link-41', 'file_name', 'link-19');">file_name</a></tt> </tt>
+<a name="L121"></a><tt class="py-lineno">121</tt>  <tt class="py-line"> </tt>
+<a name="L122"></a><tt class="py-lineno">122</tt>  <tt class="py-line">    <tt class="py-name">files</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L123"></a><tt class="py-lineno">123</tt>  <tt class="py-line"> </tt>
+<a name="L124"></a><tt class="py-lineno">124</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L125"></a><tt class="py-lineno">125</tt>  <tt class="py-line">        <tt class="py-name">files</tt> <tt class="py-op">=</tt> <tt id="link-42" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-42', 'ftp', 'link-18');">ftp</a></tt><tt class="py-op">.</tt><tt class="py-name">nlst</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L126"></a><tt class="py-lineno">126</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">ftplib</tt><tt class="py-op">.</tt><tt class="py-name">error_perm</tt> <tt class="py-keyword">as</tt> <tt class="py-name">resp</tt><tt class="py-op">:</tt> </tt>
+<a name="L127"></a><tt class="py-lineno">127</tt>  <tt class="py-line">        <tt id="link-43" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-43', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-44" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-44', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"Error updating job list: %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">resp</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-45" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-45', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-46" class="py-name" targets="Variable src.drivers.misc.status.STATE.ERROR=src.drivers.misc.status.STATE-class.html#ERROR"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-46', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L128"></a><tt class="py-lineno">128</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt id="link-47" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-47', 'jobs', 'link-15');">jobs</a></tt> </tt>
+<a name="L129"></a><tt class="py-lineno">129</tt>  <tt class="py-line"> </tt>
+<a name="L130"></a><tt class="py-lineno">130</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">f</tt> <tt class="py-keyword">in</tt> <tt class="py-name">files</tt><tt class="py-op">:</tt> </tt>
+<a name="L131"></a><tt class="py-lineno">131</tt>  <tt class="py-line">        <tt class="py-name">filename</tt><tt class="py-op">,</tt> <tt class="py-name">file_extension</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">splitext</tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">)</tt> </tt>
+<a name="L132"></a><tt class="py-lineno">132</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">filename</tt> <tt class="py-op">==</tt> <tt id="link-48" class="py-name"><a title="src.drivers.otc_wps.file_name" class="py-name" href="#" onclick="return doclink('link-48', 'file_name', 'link-19');">file_name</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L133"></a><tt class="py-lineno">133</tt>  <tt class="py-line">            <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L134"></a><tt class="py-lineno">134</tt>  <tt class="py-line">                <tt class="py-name">cfg</tt> <tt class="py-op">=</tt> <tt id="link-49" class="py-name" targets="Function src.drivers.otc_wps._download_config()=src.drivers.otc_wps-module.html#_download_config"><a title="src.drivers.otc_wps._download_config" class="py-name" href="#" onclick="return doclink('link-49', '_download_config', 'link-49');">_download_config</a></tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">)</tt> </tt>
+<a name="L135"></a><tt class="py-lineno">135</tt>  <tt class="py-line">                <tt class="py-name">nr</tt> <tt class="py-op">=</tt> <tt class="py-name">int</tt><tt class="py-op">(</tt><tt class="py-name">file_extension</tt><tt class="py-op">[</tt><tt class="py-number">1</tt><tt class="py-op">:</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L136"></a><tt class="py-lineno">136</tt>  <tt class="py-line">                <tt id="link-50" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-50', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">[</tt><tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">nr</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt id="link-51" class="py-name" targets="Function src.drivers.otc_wps.parse_job()=src.drivers.otc_wps-module.html#parse_job"><a title="src.drivers.otc_wps.parse_job" class="py-name" href="#" onclick="return doclink('link-51', 'parse_job', 'link-51');">parse_job</a></tt><tt class="py-op">(</tt><tt class="py-name">cfg</tt><tt class="py-op">,</tt> <tt class="py-name">nr</tt><tt class="py-op">)</tt> </tt>
+<a name="L137"></a><tt class="py-lineno">137</tt>  <tt class="py-line">            <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt><tt class="py-op">,</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L138"></a><tt class="py-lineno">138</tt>  <tt class="py-line">                <tt id="link-52" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-52', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-53" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-53', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"Error downloading %s: %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">e</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-54" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-54', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-55" class="py-name"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-55', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L139"></a><tt class="py-lineno">139</tt>  <tt class="py-line"> </tt>
+<a name="L140"></a><tt class="py-lineno">140</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-56" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-56', 'jobs', 'link-15');">jobs</a></tt> </tt>
+</div><a name="L141"></a><tt class="py-lineno">141</tt>  <tt class="py-line"> </tt>
+<a name="L142"></a><tt class="py-lineno">142</tt>  <tt class="py-line"> </tt>
+<a name="handleUpdateResponse"></a><div id="handleUpdateResponse-def"><a name="L143"></a><tt class="py-lineno">143</tt> <a class="py-toggle" href="#" id="handleUpdateResponse-toggle" onclick="return toggle('handleUpdateResponse');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#handleUpdateResponse">handleUpdateResponse</a><tt class="py-op">(</tt><tt class="py-param">r</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="handleUpdateResponse-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="handleUpdateResponse-expanded"><a name="L144"></a><tt class="py-lineno">144</tt>  <tt class="py-line">    <tt class="py-docstring">"""Handles the response for an update request</tt> </tt>
+<a name="L145"></a><tt class="py-lineno">145</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L146"></a><tt class="py-lineno">146</tt>  <tt class="py-line"><tt class="py-docstring">       Parses the message received from the robot, then publish the result</tt> </tt>
+<a name="L147"></a><tt class="py-lineno">147</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L148"></a><tt class="py-lineno">148</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L149"></a><tt class="py-lineno">149</tt>  <tt class="py-line"><tt class="py-docstring">        r {bytearray} -- response object</tt> </tt>
+<a name="L150"></a><tt class="py-lineno">150</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L151"></a><tt class="py-lineno">151</tt>  <tt class="py-line"> </tt>
+<a name="L152"></a><tt class="py-lineno">152</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-57" class="py-name"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-57', 'update_response', 'link-12');">update_response</a></tt> </tt>
+<a name="L153"></a><tt class="py-lineno">153</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-58" class="py-name"><a title="src.drivers.otc_wps.t_sp_params" class="py-name" href="#" onclick="return doclink('link-58', 't_sp_params', 'link-25');">t_sp_params</a></tt> </tt>
+<a name="L154"></a><tt class="py-lineno">154</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-59" class="py-name"><a title="src.drivers.otc_wps.t_current_params" class="py-name" href="#" onclick="return doclink('link-59', 't_current_params', 'link-26');">t_current_params</a></tt> </tt>
+<a name="L155"></a><tt class="py-lineno">155</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-60" class="py-name"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-60', 'current_job_idx', 'link-16');">current_job_idx</a></tt> </tt>
+<a name="L156"></a><tt class="py-lineno">156</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-61" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-61', 'jobs', 'link-15');">jobs</a></tt> </tt>
+<a name="L157"></a><tt class="py-lineno">157</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-62" class="py-name"><a title="src.drivers.otc_wps.is_arc_on" class="py-name" href="#" onclick="return doclink('link-62', 'is_arc_on', 'link-21');">is_arc_on</a></tt> </tt>
+<a name="L158"></a><tt class="py-lineno">158</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-63" class="py-name"><a title="src.drivers.otc_wps.current_values" class="py-name" href="#" onclick="return doclink('link-63', 'current_values', 'link-22');">current_values</a></tt> </tt>
+<a name="L159"></a><tt class="py-lineno">159</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-64" class="py-name"><a title="src.drivers.otc_wps.current_job" class="py-name" href="#" onclick="return doclink('link-64', 'current_job', 'link-23');">current_job</a></tt> </tt>
+<a name="L160"></a><tt class="py-lineno">160</tt>  <tt class="py-line"> </tt>
+<a name="L161"></a><tt class="py-lineno">161</tt>  <tt class="py-line">    <tt class="py-name">job_nr</tt> <tt class="py-op">=</tt> <tt class="py-name">unpack</tt><tt class="py-op">(</tt><tt class="py-string">'&gt;i'</tt><tt class="py-op">,</tt> <tt class="py-name">r</tt><tt class="py-op">[</tt><tt class="py-number">28</tt><tt class="py-op">:</tt><tt class="py-number">32</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L162"></a><tt class="py-lineno">162</tt>  <tt class="py-line"> </tt>
+<a name="L163"></a><tt class="py-lineno">163</tt>  <tt class="py-line">    <tt class="py-comment"># publish current setpoint values</tt> </tt>
+<a name="L164"></a><tt class="py-lineno">164</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">job_nr</tt><tt class="py-op">)</tt> <tt class="py-keyword">in</tt> <tt id="link-65" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-65', 'jobs', 'link-15');">jobs</a></tt> <tt class="py-keyword">and</tt> <tt class="py-op">(</tt> </tt>
+<a name="L165"></a><tt class="py-lineno">165</tt>  <tt class="py-line">            <tt class="py-name">job_nr</tt> <tt class="py-op">!=</tt> <tt id="link-66" class="py-name"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-66', 'current_job_idx', 'link-16');">current_job_idx</a></tt> <tt class="py-keyword">or</tt> <tt id="link-67" class="py-name"><a title="src.drivers.otc_wps.current_job" class="py-name" href="#" onclick="return doclink('link-67', 'current_job', 'link-23');">current_job</a></tt> <tt class="py-op">!=</tt> <tt id="link-68" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-68', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">[</tt><tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">job_nr</tt><tt class="py-op">)</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L166"></a><tt class="py-lineno">166</tt>  <tt class="py-line">        <tt id="link-69" class="py-name"><a title="src.drivers.otc_wps.current_job" class="py-name" href="#" onclick="return doclink('link-69', 'current_job', 'link-23');">current_job</a></tt> <tt class="py-op">=</tt> <tt id="link-70" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-70', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">[</tt><tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">job_nr</tt><tt class="py-op">)</tt><tt class="py-op">]</tt> </tt>
+<a name="L167"></a><tt class="py-lineno">167</tt>  <tt class="py-line">        <tt id="link-71" class="py-name"><a title="src.drivers.otc_wps.t_sp_params" class="py-name" href="#" onclick="return doclink('link-71', 't_sp_params', 'link-25');">t_sp_params</a></tt><tt class="py-op">.</tt><tt id="link-72" class="py-name" targets="Function src.drivers.misc.logger.publish()=src.drivers.misc.logger-module.html#publish"><a title="src.drivers.misc.logger.publish" class="py-name" href="#" onclick="return doclink('link-72', 'publish', 'link-72');">publish</a></tt><tt class="py-op">(</tt><tt id="link-73" class="py-name"><a title="src.drivers.otc_wps.current_job" class="py-name" href="#" onclick="return doclink('link-73', 'current_job', 'link-23');">current_job</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L168"></a><tt class="py-lineno">168</tt>  <tt class="py-line"> </tt>
+<a name="L169"></a><tt class="py-lineno">169</tt>  <tt class="py-line">    <tt class="py-name">_is_arc_on</tt> <tt class="py-op">=</tt> <tt class="py-name">unpack</tt><tt class="py-op">(</tt><tt class="py-string">'&gt;i'</tt><tt class="py-op">,</tt> <tt class="py-name">r</tt><tt class="py-op">[</tt><tt class="py-number">24</tt><tt class="py-op">:</tt><tt class="py-number">28</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt> </tt>
+<a name="L170"></a><tt class="py-lineno">170</tt>  <tt class="py-line"> </tt>
+<a name="L171"></a><tt class="py-lineno">171</tt>  <tt class="py-line">    <tt class="py-comment"># publish current values</tt> </tt>
+<a name="L172"></a><tt class="py-lineno">172</tt>  <tt class="py-line">    <tt class="py-name">old_values</tt> <tt class="py-op">=</tt> <tt class="py-name">deepcopy</tt><tt class="py-op">(</tt><tt id="link-74" class="py-name"><a title="src.drivers.otc_wps.current_values" class="py-name" href="#" onclick="return doclink('link-74', 'current_values', 'link-22');">current_values</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L173"></a><tt class="py-lineno">173</tt>  <tt class="py-line">    <tt id="link-75" class="py-name"><a title="src.drivers.otc_wps.current_values" class="py-name" href="#" onclick="return doclink('link-75', 'current_values', 'link-22');">current_values</a></tt> <tt class="py-op">=</tt> <tt class="py-name">WeldingState</tt><tt class="py-op">(</tt> </tt>
+<a name="L174"></a><tt class="py-lineno">174</tt>  <tt class="py-line">        <tt id="link-76" class="py-name"><a title="src.drivers.otc_wps.InputParams.amperage" class="py-name" href="#" onclick="return doclink('link-76', 'amperage', 'link-34');">amperage</a></tt><tt class="py-op">=</tt><tt class="py-name">unpack</tt><tt class="py-op">(</tt><tt class="py-string">'&gt;f'</tt><tt class="py-op">,</tt> <tt class="py-name">r</tt><tt class="py-op">[</tt><tt class="py-number">8</tt><tt class="py-op">:</tt><tt class="py-number">12</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> </tt>
+<a name="L175"></a><tt class="py-lineno">175</tt>  <tt class="py-line">        <tt id="link-77" class="py-name"><a title="src.drivers.otc_wps.InputParams.voltage" class="py-name" href="#" onclick="return doclink('link-77', 'voltage', 'link-33');">voltage</a></tt><tt class="py-op">=</tt><tt class="py-name">unpack</tt><tt class="py-op">(</tt><tt class="py-string">'&gt;f'</tt><tt class="py-op">,</tt> <tt class="py-name">r</tt><tt class="py-op">[</tt><tt class="py-number">12</tt><tt class="py-op">:</tt><tt class="py-number">16</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> </tt>
+<a name="L176"></a><tt class="py-lineno">176</tt>  <tt class="py-line">        <tt class="py-name">filler_speed</tt><tt class="py-op">=</tt><tt class="py-name">unpack</tt><tt class="py-op">(</tt><tt class="py-string">'&gt;i'</tt><tt class="py-op">,</tt> <tt class="py-name">r</tt><tt class="py-op">[</tt><tt class="py-number">16</tt><tt class="py-op">:</tt><tt class="py-number">20</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> </tt>
+<a name="L177"></a><tt class="py-lineno">177</tt>  <tt class="py-line">        <tt class="py-name">default_arc_length</tt><tt class="py-op">=</tt><tt class="py-name">unpack</tt><tt class="py-op">(</tt><tt class="py-string">'&gt;i'</tt><tt class="py-op">,</tt> <tt class="py-name">r</tt><tt class="py-op">[</tt><tt class="py-number">20</tt><tt class="py-op">:</tt><tt class="py-number">24</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">0</tt><tt class="py-op">]</tt><tt class="py-op">,</tt> </tt>
+<a name="L178"></a><tt class="py-lineno">178</tt>  <tt class="py-line">        <tt id="link-78" class="py-name"><a title="src.drivers.otc_wps.is_arc_on" class="py-name" href="#" onclick="return doclink('link-78', 'is_arc_on', 'link-21');">is_arc_on</a></tt><tt class="py-op">=</tt><tt class="py-name">_is_arc_on</tt><tt class="py-op">,</tt> </tt>
+<a name="L179"></a><tt class="py-lineno">179</tt>  <tt class="py-line">        <tt class="py-name">job_number</tt><tt class="py-op">=</tt><tt class="py-name">job_nr</tt> </tt>
+<a name="L180"></a><tt class="py-lineno">180</tt>  <tt class="py-line">    <tt class="py-op">)</tt> </tt>
+<a name="L181"></a><tt class="py-lineno">181</tt>  <tt class="py-line"> </tt>
+<a name="L182"></a><tt class="py-lineno">182</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">old_values</tt> <tt class="py-op">!=</tt> <tt id="link-79" class="py-name"><a title="src.drivers.otc_wps.current_values" class="py-name" href="#" onclick="return doclink('link-79', 'current_values', 'link-22');">current_values</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L183"></a><tt class="py-lineno">183</tt>  <tt class="py-line">        <tt id="link-80" class="py-name"><a title="src.drivers.otc_wps.t_current_params" class="py-name" href="#" onclick="return doclink('link-80', 't_current_params', 'link-26');">t_current_params</a></tt><tt class="py-op">.</tt><tt id="link-81" class="py-name"><a title="src.drivers.misc.logger.publish" class="py-name" href="#" onclick="return doclink('link-81', 'publish', 'link-72');">publish</a></tt><tt class="py-op">(</tt><tt id="link-82" class="py-name"><a title="src.drivers.otc_wps.current_values" class="py-name" href="#" onclick="return doclink('link-82', 'current_values', 'link-22');">current_values</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L184"></a><tt class="py-lineno">184</tt>  <tt class="py-line"> </tt>
+<a name="L185"></a><tt class="py-lineno">185</tt>  <tt class="py-line">    <tt id="link-83" class="py-name"><a title="src.drivers.otc_wps.is_arc_on" class="py-name" href="#" onclick="return doclink('link-83', 'is_arc_on', 'link-21');">is_arc_on</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> <tt class="py-keyword">if</tt> <tt class="py-name">_is_arc_on</tt> <tt class="py-op">==</tt> <tt class="py-number">1</tt> <tt class="py-keyword">else</tt> <tt class="py-name">False</tt> </tt>
+<a name="L186"></a><tt class="py-lineno">186</tt>  <tt class="py-line"> </tt>
+<a name="L187"></a><tt class="py-lineno">187</tt>  <tt class="py-line">    <tt id="link-84" class="py-name"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-84', 'update_response', 'link-12');">update_response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L188"></a><tt class="py-lineno">188</tt>  <tt class="py-line">    <tt id="link-85" class="py-name"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-85', 'current_job_idx', 'link-16');">current_job_idx</a></tt> <tt class="py-op">=</tt> <tt class="py-name">job_nr</tt> </tt>
+</div><a name="L189"></a><tt class="py-lineno">189</tt>  <tt class="py-line"> </tt>
+<a name="L190"></a><tt class="py-lineno">190</tt>  <tt class="py-line"> </tt>
+<a name="send_update"></a><div id="send_update-def"><a name="L191"></a><tt class="py-lineno">191</tt> <a class="py-toggle" href="#" id="send_update-toggle" onclick="return toggle('send_update');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#send_update">send_update</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="send_update-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="send_update-expanded"><a name="L192"></a><tt class="py-lineno">192</tt>  <tt class="py-line">    <tt class="py-docstring">"""Sends an update request to the robot</tt> </tt>
+<a name="L193"></a><tt class="py-lineno">193</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L194"></a><tt class="py-lineno">194</tt>  <tt class="py-line"><tt class="py-docstring">       Asks for the latest values from the robot</tt> </tt>
+<a name="L195"></a><tt class="py-lineno">195</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L196"></a><tt class="py-lineno">196</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L197"></a><tt class="py-lineno">197</tt>  <tt class="py-line"><tt class="py-docstring">        EmptyResponse -- Empty</tt> </tt>
+<a name="L198"></a><tt class="py-lineno">198</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L199"></a><tt class="py-lineno">199</tt>  <tt class="py-line"> </tt>
+<a name="L200"></a><tt class="py-lineno">200</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-86" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-86', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L201"></a><tt class="py-lineno">201</tt>  <tt class="py-line">    <tt class="py-comment">#print "Sending update"</tt> </tt>
+<a name="L202"></a><tt class="py-lineno">202</tt>  <tt class="py-line"> </tt>
+<a name="L203"></a><tt class="py-lineno">203</tt>  <tt class="py-line">    <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-name">bytearray</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L204"></a><tt class="py-lineno">204</tt>  <tt class="py-line">    <tt class="py-comment"># add command - update</tt> </tt>
+<a name="L205"></a><tt class="py-lineno">205</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt id="link-87" class="py-name" targets="Class src.drivers.hyundai_robot.Commands=src.drivers.hyundai_robot.Commands-class.html,Class src.drivers.nachi_robot.Commands=src.drivers.nachi_robot.Commands-class.html,Class src.drivers.otc_wps.Commands=src.drivers.otc_wps.Commands-class.html"><a title="src.drivers.hyundai_robot.Commands
+src.drivers.nachi_robot.Commands
+src.drivers.otc_wps.Commands" class="py-name" href="#" onclick="return doclink('link-87', 'Commands', 'link-87');">Commands</a></tt><tt class="py-op">.</tt><tt id="link-88" class="py-name"><a title="src.drivers.hyundai_robot.Commands.update
+src.drivers.hyundai_robot.update
+src.drivers.mel_scanner.MEL_M2D_Driver.update
+src.drivers.move_it_robot.update
+src.drivers.nachi_robot.Commands.update
+src.drivers.nachi_robot.update
+src.drivers.otc_wps.Commands.update" class="py-name" href="#" onclick="return doclink('link-88', 'update', 'link-28');">update</a></tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L206"></a><tt class="py-lineno">206</tt>  <tt class="py-line"> </tt>
+<a name="L207"></a><tt class="py-lineno">207</tt>  <tt class="py-line">    <tt class="py-comment"># append message to udp queue</tt> </tt>
+<a name="L208"></a><tt class="py-lineno">208</tt>  <tt class="py-line">    <tt id="link-89" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-89', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-90" class="py-name" targets="Method src.drivers.misc.udp.UdpConnector.appendToQueue()=src.drivers.misc.udp.UdpConnector-class.html#appendToQueue,Method src.drivers.udp.UdpConnector.appendToQueue()=src.drivers.udp.UdpConnector-class.html#appendToQueue"><a title="src.drivers.misc.udp.UdpConnector.appendToQueue
+src.drivers.udp.UdpConnector.appendToQueue" class="py-name" href="#" onclick="return doclink('link-90', 'appendToQueue', 'link-90');">appendToQueue</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt class="py-string">"send_update"</tt><tt class="py-op">,</tt> <tt id="link-91" class="py-name" targets="Function src.drivers.hyundai_robot.handleUpdateResponse()=src.drivers.hyundai_robot-module.html#handleUpdateResponse,Function src.drivers.nachi_robot.handleUpdateResponse()=src.drivers.nachi_robot-module.html#handleUpdateResponse,Function src.drivers.otc_wps.handleUpdateResponse()=src.drivers.otc_wps-module.html#handleUpdateResponse"><a title="src.drivers.hyundai_robot.handleUpdateResponse
+src.drivers.nachi_robot.handleUpdateResponse
+src.drivers.otc_wps.handleUpdateResponse" class="py-name" href="#" onclick="return doclink('link-91', 'handleUpdateResponse', 'link-91');">handleUpdateResponse</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L209"></a><tt class="py-lineno">209</tt>  <tt class="py-line"> </tt>
+<a name="L210"></a><tt class="py-lineno">210</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">EmptyResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L211"></a><tt class="py-lineno">211</tt>  <tt class="py-line"> </tt>
+<a name="L212"></a><tt class="py-lineno">212</tt>  <tt class="py-line"> </tt>
+<a name="wps_state_publisher"></a><div id="wps_state_publisher-def"><a name="L213"></a><tt class="py-lineno">213</tt> <a class="py-toggle" href="#" id="wps_state_publisher-toggle" onclick="return toggle('wps_state_publisher');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#wps_state_publisher">wps_state_publisher</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="wps_state_publisher-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="wps_state_publisher-expanded"><a name="L214"></a><tt class="py-lineno">214</tt>  <tt class="py-line">    <tt class="py-docstring">"""Publishes the wps state</tt> </tt>
+<a name="L215"></a><tt class="py-lineno">215</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L216"></a><tt class="py-lineno">216</tt>  <tt class="py-line"><tt class="py-docstring">       Runs in a different thread, polling and publishing the wps state every second</tt> </tt>
+<a name="L217"></a><tt class="py-lineno">217</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L218"></a><tt class="py-lineno">218</tt>  <tt class="py-line"> </tt>
+<a name="L219"></a><tt class="py-lineno">219</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-92" class="py-name"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-92', 'update_response', 'link-12');">update_response</a></tt> </tt>
+<a name="L220"></a><tt class="py-lineno">220</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-93" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-93', 'name', 'link-27');">name</a></tt> </tt>
+<a name="L221"></a><tt class="py-lineno">221</tt>  <tt class="py-line">    <tt id="link-94" class="py-name"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-94', 'update_response', 'link-12');">update_response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L222"></a><tt class="py-lineno">222</tt>  <tt class="py-line">    <tt class="py-name">rate</tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Rate</tt><tt class="py-op">(</tt><tt class="py-number">20</tt><tt class="py-op">)</tt>  <tt class="py-comment"># 5hz</tt> </tt>
+<a name="L223"></a><tt class="py-lineno">223</tt>  <tt class="py-line">    <tt class="py-name">t</tt> <tt class="py-op">=</tt> <tt class="py-name">currentThread</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L224"></a><tt class="py-lineno">224</tt>  <tt class="py-line">    <tt class="py-name">timeout</tt> <tt class="py-op">=</tt> <tt class="py-number">60</tt> </tt>
+<a name="L225"></a><tt class="py-lineno">225</tt>  <tt class="py-line">    <tt class="py-keyword">while</tt> <tt class="py-keyword">not</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">is_shutdown</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">t</tt><tt class="py-op">,</tt> <tt class="py-string">"do_run"</tt><tt class="py-op">,</tt> <tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L226"></a><tt class="py-lineno">226</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L227"></a><tt class="py-lineno">227</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-op">(</tt><tt class="py-keyword">not</tt> <tt id="link-95" class="py-name"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-95', 'update_response', 'link-12');">update_response</a></tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L228"></a><tt class="py-lineno">228</tt>  <tt class="py-line">                <tt class="py-name">timeout</tt> <tt class="py-op">-=</tt> <tt class="py-number">1</tt> </tt>
+<a name="L229"></a><tt class="py-lineno">229</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">timeout</tt> <tt class="py-op">==</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L230"></a><tt class="py-lineno">230</tt>  <tt class="py-line">                    <tt class="py-name">ws</tt> <tt class="py-op">=</tt> <tt class="py-name">WeldingState</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L231"></a><tt class="py-lineno">231</tt>  <tt class="py-line">                    <tt class="py-name">ws</tt><tt class="py-op">.</tt><tt class="py-name">error</tt> <tt class="py-op">=</tt> <tt class="py-string">"No response from the WPS"</tt> </tt>
+<a name="L232"></a><tt class="py-lineno">232</tt>  <tt class="py-line">                    <tt id="link-96" class="py-name"><a title="src.drivers.otc_wps.t_current_params" class="py-name" href="#" onclick="return doclink('link-96', 't_current_params', 'link-26');">t_current_params</a></tt><tt class="py-op">.</tt><tt id="link-97" class="py-name"><a title="src.drivers.misc.logger.publish" class="py-name" href="#" onclick="return doclink('link-97', 'publish', 'link-72');">publish</a></tt><tt class="py-op">(</tt><tt class="py-name">ws</tt><tt class="py-op">)</tt> </tt>
+<a name="L233"></a><tt class="py-lineno">233</tt>  <tt class="py-line">            <tt class="py-keyword">else</tt><tt class="py-op">:</tt> </tt>
+<a name="L234"></a><tt class="py-lineno">234</tt>  <tt class="py-line">                <tt class="py-name">timeout</tt> <tt class="py-op">=</tt> <tt class="py-number">60</tt> </tt>
+<a name="L235"></a><tt class="py-lineno">235</tt>  <tt class="py-line"> </tt>
+<a name="L236"></a><tt class="py-lineno">236</tt>  <tt class="py-line">            <tt id="link-98" class="py-name"><a title="src.drivers.hyundai_robot.update_response
+src.drivers.nachi_robot.update_response
+src.drivers.otc_wps.update_response" class="py-name" href="#" onclick="return doclink('link-98', 'update_response', 'link-12');">update_response</a></tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L237"></a><tt class="py-lineno">237</tt>  <tt class="py-line">            <tt id="link-99" class="py-name" targets="Variable src.drivers.move_it_robot.thread=src.drivers.move_it_robot-module.html#thread"><a title="src.drivers.move_it_robot.thread" class="py-name" href="#" onclick="return doclink('link-99', 'thread', 'link-99');">thread</a></tt> <tt class="py-op">=</tt> <tt class="py-name">Thread</tt><tt class="py-op">(</tt><tt class="py-name">target</tt><tt class="py-op">=</tt><tt id="link-100" class="py-name" targets="Function src.drivers.otc_wps.update_asynch()=src.drivers.otc_wps-module.html#update_asynch"><a title="src.drivers.otc_wps.update_asynch" class="py-name" href="#" onclick="return doclink('link-100', 'update_asynch', 'link-100');">update_asynch</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L238"></a><tt class="py-lineno">238</tt>  <tt class="py-line">            <tt id="link-101" class="py-name"><a title="src.drivers.move_it_robot.thread" class="py-name" href="#" onclick="return doclink('link-101', 'thread', 'link-99');">thread</a></tt><tt class="py-op">.</tt><tt id="link-102" class="py-name" targets="Method src.drivers.mel_scanner.MEL_M2D_Driver.start()=src.drivers.mel_scanner.MEL_M2D_Driver-class.html#start,Method src.drivers.uepsilon_scanner.uEpsilon_Driver.start()=src.drivers.uepsilon_scanner.uEpsilon_Driver-class.html#start"><a title="src.drivers.mel_scanner.MEL_M2D_Driver.start
+src.drivers.uepsilon_scanner.uEpsilon_Driver.start" class="py-name" href="#" onclick="return doclink('link-102', 'start', 'link-102');">start</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L239"></a><tt class="py-lineno">239</tt>  <tt class="py-line"> </tt>
+<a name="L240"></a><tt class="py-lineno">240</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt> <tt class="py-keyword">as</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L241"></a><tt class="py-lineno">241</tt>  <tt class="py-line">            <tt id="link-103" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-103', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-104" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-104', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"State publish error %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">e</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-105" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-105', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-106" class="py-name"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-106', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L242"></a><tt class="py-lineno">242</tt>  <tt class="py-line"> </tt>
+<a name="L243"></a><tt class="py-lineno">243</tt>  <tt class="py-line">        <tt class="py-name">rate</tt><tt class="py-op">.</tt><tt class="py-name">sleep</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L244"></a><tt class="py-lineno">244</tt>  <tt class="py-line"> </tt>
+<a name="L245"></a><tt class="py-lineno">245</tt>  <tt class="py-line">    <tt id="link-107" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-107', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-108" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-108', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"WPS state publisher stopped"</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L246"></a><tt class="py-lineno">246</tt>  <tt class="py-line"> </tt>
+<a name="L247"></a><tt class="py-lineno">247</tt>  <tt class="py-line"> </tt>
+<a name="update_asynch"></a><div id="update_asynch-def"><a name="L248"></a><tt class="py-lineno">248</tt> <a class="py-toggle" href="#" id="update_asynch-toggle" onclick="return toggle('update_asynch');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#update_asynch">update_asynch</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="update_asynch-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="update_asynch-expanded"><a name="L249"></a><tt class="py-lineno">249</tt>  <tt class="py-line">    <tt class="py-docstring">"""Updates the wps state on a new thread</tt> </tt>
+<a name="L250"></a><tt class="py-lineno">250</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L251"></a><tt class="py-lineno">251</tt>  <tt class="py-line"><tt class="py-docstring">       The blocking network response is handled this way</tt> </tt>
+<a name="L252"></a><tt class="py-lineno">252</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L253"></a><tt class="py-lineno">253</tt>  <tt class="py-line"> </tt>
+<a name="L254"></a><tt class="py-lineno">254</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-109" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-109', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L255"></a><tt class="py-lineno">255</tt>  <tt class="py-line"> </tt>
+<a name="L256"></a><tt class="py-lineno">256</tt>  <tt class="py-line">    <tt class="py-comment"># If the queue already contains an update request, return</tt> </tt>
+<a name="L257"></a><tt class="py-lineno">257</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-op">(</tt><tt id="link-110" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-110', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-111" class="py-name" targets="Method src.drivers.misc.udp.UdpConnector.isQueued()=src.drivers.misc.udp.UdpConnector-class.html#isQueued,Method src.drivers.udp.UdpConnector.isQueued()=src.drivers.udp.UdpConnector-class.html#isQueued"><a title="src.drivers.misc.udp.UdpConnector.isQueued
+src.drivers.udp.UdpConnector.isQueued" class="py-name" href="#" onclick="return doclink('link-111', 'isQueued', 'link-111');">isQueued</a></tt><tt class="py-op">(</tt><tt class="py-string">"send_update"</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L258"></a><tt class="py-lineno">258</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> </tt>
+<a name="L259"></a><tt class="py-lineno">259</tt>  <tt class="py-line"> </tt>
+<a name="L260"></a><tt class="py-lineno">260</tt>  <tt class="py-line">    <tt id="link-112" class="py-name" targets="Function src.drivers.otc_wps.send_update()=src.drivers.otc_wps-module.html#send_update"><a title="src.drivers.otc_wps.send_update" class="py-name" href="#" onclick="return doclink('link-112', 'send_update', 'link-112');">send_update</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L261"></a><tt class="py-lineno">261</tt>  <tt class="py-line"> </tt>
+<a name="L262"></a><tt class="py-lineno">262</tt>  <tt class="py-line"> </tt>
+<a name="set_config"></a><div id="set_config-def"><a name="L263"></a><tt class="py-lineno">263</tt> <a class="py-toggle" href="#" id="set_config-toggle" onclick="return toggle('set_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#set_config">set_config</a><tt class="py-op">(</tt><tt class="py-param">data</tt><tt class="py-op">,</tt> <tt class="py-param">outputfile_nr</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="set_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="set_config-expanded"><a name="L264"></a><tt class="py-lineno">264</tt>  <tt class="py-line">    <tt class="py-docstring">"""Set the given config on the WPS</tt> </tt>
+<a name="L265"></a><tt class="py-lineno">265</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L266"></a><tt class="py-lineno">266</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L267"></a><tt class="py-lineno">267</tt>  <tt class="py-line"><tt class="py-docstring">        data {WeldingState} -- data with the current configuration</tt> </tt>
+<a name="L268"></a><tt class="py-lineno">268</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L269"></a><tt class="py-lineno">269</tt>  <tt class="py-line"><tt class="py-docstring">    Keyword Arguments:</tt> </tt>
+<a name="L270"></a><tt class="py-lineno">270</tt>  <tt class="py-line"><tt class="py-docstring">        outputfile_nr {int32} -- which wps config nr to use when storing the config file on the WPS (default: {None})</tt> </tt>
+<a name="L271"></a><tt class="py-lineno">271</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L272"></a><tt class="py-lineno">272</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L273"></a><tt class="py-lineno">273</tt>  <tt class="py-line"><tt class="py-docstring">        EmptyResponse -- empty</tt> </tt>
+<a name="L274"></a><tt class="py-lineno">274</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L275"></a><tt class="py-lineno">275</tt>  <tt class="py-line"> </tt>
+<a name="L276"></a><tt class="py-lineno">276</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-113" class="py-name"><a title="src.drivers.otc_wps.file_name" class="py-name" href="#" onclick="return doclink('link-113', 'file_name', 'link-19');">file_name</a></tt> </tt>
+<a name="L277"></a><tt class="py-lineno">277</tt>  <tt class="py-line"> </tt>
+<a name="L278"></a><tt class="py-lineno">278</tt>  <tt class="py-line">    <tt class="py-comment">#print data</tt> </tt>
+<a name="L279"></a><tt class="py-lineno">279</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L280"></a><tt class="py-lineno">280</tt>  <tt class="py-line">        <tt class="py-name">f_in</tt> <tt class="py-op">=</tt> <tt class="py-string">"{0}.{1}"</tt><tt class="py-op">.</tt><tt class="py-name">format</tt><tt class="py-op">(</tt> </tt>
+<a name="L281"></a><tt class="py-lineno">281</tt>  <tt class="py-line">            <tt id="link-114" class="py-name"><a title="src.drivers.otc_wps.file_name" class="py-name" href="#" onclick="return doclink('link-114', 'file_name', 'link-19');">file_name</a></tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt> </tt>
+<a name="L282"></a><tt class="py-lineno">282</tt>  <tt class="py-line">                <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">job_number</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">zfill</tt><tt class="py-op">(</tt><tt class="py-number">3</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L283"></a><tt class="py-lineno">283</tt>  <tt class="py-line">        <tt class="py-name">f_out</tt> <tt class="py-op">=</tt> <tt class="py-string">"{0}.{1}"</tt><tt class="py-op">.</tt><tt class="py-name">format</tt><tt class="py-op">(</tt> </tt>
+<a name="L284"></a><tt class="py-lineno">284</tt>  <tt class="py-line">            <tt id="link-115" class="py-name"><a title="src.drivers.otc_wps.file_name" class="py-name" href="#" onclick="return doclink('link-115', 'file_name', 'link-19');">file_name</a></tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt> </tt>
+<a name="L285"></a><tt class="py-lineno">285</tt>  <tt class="py-line">                <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">job_number</tt> <tt class="py-keyword">if</tt> <tt class="py-name">outputfile_nr</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt> <tt class="py-keyword">else</tt> <tt class="py-name">outputfile_nr</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">zfill</tt><tt class="py-op">(</tt><tt class="py-number">3</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L286"></a><tt class="py-lineno">286</tt>  <tt class="py-line"> </tt>
+<a name="L287"></a><tt class="py-lineno">287</tt>  <tt class="py-line">        <tt class="py-name">cfg</tt> <tt class="py-op">=</tt> <tt id="link-116" class="py-name"><a title="src.drivers.otc_wps._download_config" class="py-name" href="#" onclick="return doclink('link-116', '_download_config', 'link-49');">_download_config</a></tt><tt class="py-op">(</tt><tt class="py-name">f_in</tt><tt class="py-op">)</tt> </tt>
+<a name="L288"></a><tt class="py-lineno">288</tt>  <tt class="py-line"> </tt>
+<a name="L289"></a><tt class="py-lineno">289</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-117" class="py-name"><a title="src.drivers.otc_wps.InputParams.amperage" class="py-name" href="#" onclick="return doclink('link-117', 'amperage', 'link-34');">amperage</a></tt> <tt class="py-op">!=</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L290"></a><tt class="py-lineno">290</tt>  <tt class="py-line">            <tt class="py-name">cfg</tt><tt class="py-op">.</tt><tt class="py-name">set</tt><tt class="py-op">(</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">,</tt> <tt class="py-string">"A_CURRENT"</tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-118" class="py-name"><a title="src.drivers.otc_wps.InputParams.amperage" class="py-name" href="#" onclick="return doclink('link-118', 'amperage', 'link-34');">amperage</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L291"></a><tt class="py-lineno">291</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">mode</tt> <tt class="py-op">!=</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L292"></a><tt class="py-lineno">292</tt>  <tt class="py-line">            <tt class="py-name">cfg</tt><tt class="py-op">.</tt><tt class="py-name">set</tt><tt class="py-op">(</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">,</tt> <tt class="py-string">"A_CURRENT_OUTPUT"</tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">mode</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L293"></a><tt class="py-lineno">293</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">filler_speed</tt> <tt class="py-op">!=</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L294"></a><tt class="py-lineno">294</tt>  <tt class="py-line">            <tt class="py-name">cfg</tt><tt class="py-op">.</tt><tt class="py-name">set</tt><tt class="py-op">(</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">,</tt> <tt class="py-string">"A_FILLER_CONTROL"</tt><tt class="py-op">,</tt> <tt class="py-string">"1"</tt><tt class="py-op">)</tt> </tt>
+<a name="L295"></a><tt class="py-lineno">295</tt>  <tt class="py-line">            <tt class="py-name">cfg</tt><tt class="py-op">.</tt><tt class="py-name">set</tt><tt class="py-op">(</tt> </tt>
+<a name="L296"></a><tt class="py-lineno">296</tt>  <tt class="py-line">                <tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">,</tt> <tt class="py-string">"A_FILLER_SPEED"</tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt> </tt>
+<a name="L297"></a><tt class="py-lineno">297</tt>  <tt class="py-line">                    <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt class="py-name">filler_speed</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L298"></a><tt class="py-lineno">298</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-119" class="py-name"><a title="src.drivers.move_it_robot.speed" class="py-name" href="#" onclick="return doclink('link-119', 'speed', 'link-38');">speed</a></tt> <tt class="py-op">!=</tt> <tt class="py-number">0</tt><tt class="py-op">:</tt> </tt>
+<a name="L299"></a><tt class="py-lineno">299</tt>  <tt class="py-line">            <tt class="py-name">cfg</tt><tt class="py-op">.</tt><tt class="py-name">set</tt><tt class="py-op">(</tt><tt class="py-string">"AST_CONDITION"</tt><tt class="py-op">,</tt> <tt class="py-string">"A_SPEED"</tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">params</tt><tt class="py-op">.</tt><tt id="link-120" class="py-name"><a title="src.drivers.move_it_robot.speed" class="py-name" href="#" onclick="return doclink('link-120', 'speed', 'link-38');">speed</a></tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L300"></a><tt class="py-lineno">300</tt>  <tt class="py-line"> </tt>
+<a name="L301"></a><tt class="py-lineno">301</tt>  <tt class="py-line">        <tt class="py-name">f</tt> <tt class="py-op">=</tt> <tt class="py-name">open</tt><tt class="py-op">(</tt><tt class="py-name">f_out</tt><tt class="py-op">,</tt> <tt class="py-string">'w'</tt><tt class="py-op">)</tt> </tt>
+<a name="L302"></a><tt class="py-lineno">302</tt>  <tt class="py-line">        <tt class="py-name">cfg</tt><tt class="py-op">.</tt><tt class="py-name">write</tt><tt class="py-op">(</tt><tt class="py-name">f</tt><tt class="py-op">,</tt> <tt class="py-name">space_around_delimiters</tt><tt class="py-op">=</tt><tt class="py-name">False</tt><tt class="py-op">)</tt> </tt>
+<a name="L303"></a><tt class="py-lineno">303</tt>  <tt class="py-line">        <tt class="py-name">f</tt><tt class="py-op">.</tt><tt id="link-121" class="py-name" targets="Method src.drivers.mel_scanner.MEL_M2D_Driver.close()=src.drivers.mel_scanner.MEL_M2D_Driver-class.html#close,Method src.drivers.uepsilon_scanner.uEpsilon_Driver.close()=src.drivers.uepsilon_scanner.uEpsilon_Driver-class.html#close"><a title="src.drivers.mel_scanner.MEL_M2D_Driver.close
+src.drivers.uepsilon_scanner.uEpsilon_Driver.close" class="py-name" href="#" onclick="return doclink('link-121', 'close', 'link-121');">close</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L304"></a><tt class="py-lineno">304</tt>  <tt class="py-line"> </tt>
+<a name="L305"></a><tt class="py-lineno">305</tt>  <tt class="py-line">        <tt class="py-comment"># Upload to FTP</tt> </tt>
+<a name="L306"></a><tt class="py-lineno">306</tt>  <tt class="py-line">        <tt class="py-name">f</tt> <tt class="py-op">=</tt> <tt class="py-name">open</tt><tt class="py-op">(</tt><tt class="py-name">f_out</tt><tt class="py-op">,</tt> <tt class="py-string">'r'</tt><tt class="py-op">)</tt> </tt>
+<a name="L307"></a><tt class="py-lineno">307</tt>  <tt class="py-line">        <tt id="link-122" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-122', 'ftp', 'link-18');">ftp</a></tt><tt class="py-op">.</tt><tt class="py-name">storlines</tt><tt class="py-op">(</tt><tt class="py-string">'STOR {0}'</tt><tt class="py-op">.</tt><tt class="py-name">format</tt><tt class="py-op">(</tt><tt class="py-name">f_out</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">f</tt><tt class="py-op">)</tt> </tt>
+<a name="L308"></a><tt class="py-lineno">308</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt> <tt class="py-keyword">as</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L309"></a><tt class="py-lineno">309</tt>  <tt class="py-line">        <tt class="py-keyword">global</tt> <tt id="link-123" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-123', 'name', 'link-27');">name</a></tt> </tt>
+<a name="L310"></a><tt class="py-lineno">310</tt>  <tt class="py-line">        <tt id="link-124" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-124', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-125" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-125', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">e</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-126" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-126', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-127" class="py-name"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-127', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L311"></a><tt class="py-lineno">311</tt>  <tt class="py-line"> </tt>
+<a name="L312"></a><tt class="py-lineno">312</tt>  <tt class="py-line">        <tt class="py-name">sys</tt><tt class="py-op">.</tt><tt class="py-name">exit</tt><tt class="py-op">(</tt><tt class="py-number">0</tt><tt class="py-op">)</tt> </tt>
+<a name="L313"></a><tt class="py-lineno">313</tt>  <tt class="py-line"> </tt>
+<a name="L314"></a><tt class="py-lineno">314</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">SetWeldingParametersResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L315"></a><tt class="py-lineno">315</tt>  <tt class="py-line"> </tt>
+<a name="L316"></a><tt class="py-lineno">316</tt>  <tt class="py-line"> </tt>
+<a name="_download_config"></a><div id="_download_config-def"><a name="L317"></a><tt class="py-lineno">317</tt> <a class="py-toggle" href="#" id="_download_config-toggle" onclick="return toggle('_download_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#_download_config">_download_config</a><tt class="py-op">(</tt><tt class="py-param">f</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="_download_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="_download_config-expanded"><a name="L318"></a><tt class="py-lineno">318</tt>  <tt class="py-line">    <tt class="py-docstring">"""Download a config file from the WPS</tt> </tt>
+<a name="L319"></a><tt class="py-lineno">319</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L320"></a><tt class="py-lineno">320</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L321"></a><tt class="py-lineno">321</tt>  <tt class="py-line"><tt class="py-docstring">        f {string} -- file name</tt> </tt>
+<a name="L322"></a><tt class="py-lineno">322</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L323"></a><tt class="py-lineno">323</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L324"></a><tt class="py-lineno">324</tt>  <tt class="py-line"><tt class="py-docstring">        dict -- configuration</tt> </tt>
+<a name="L325"></a><tt class="py-lineno">325</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L326"></a><tt class="py-lineno">326</tt>  <tt class="py-line"> </tt>
+<a name="L327"></a><tt class="py-lineno">327</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-128" class="py-name"><a title="src.drivers.otc_wps.jobs_pathname" class="py-name" href="#" onclick="return doclink('link-128', 'jobs_pathname', 'link-17');">jobs_pathname</a></tt> </tt>
+<a name="L328"></a><tt class="py-lineno">328</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-129" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-129', 'ftp', 'link-18');">ftp</a></tt> </tt>
+<a name="L329"></a><tt class="py-lineno">329</tt>  <tt class="py-line"> </tt>
+<a name="L330"></a><tt class="py-lineno">330</tt>  <tt class="py-line">    <tt class="py-name">ftp_reader</tt> <tt class="py-op">=</tt> <tt class="py-name">cStringIO</tt><tt class="py-op">.</tt><tt class="py-name">StringIO</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L331"></a><tt class="py-lineno">331</tt>  <tt class="py-line">    <tt id="link-130" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-130', 'ftp', 'link-18');">ftp</a></tt><tt class="py-op">.</tt><tt class="py-name">retrbinary</tt><tt class="py-op">(</tt><tt class="py-string">'RETR {0}/{1}'</tt><tt class="py-op">.</tt><tt class="py-name">format</tt><tt class="py-op">(</tt><tt id="link-131" class="py-name"><a title="src.drivers.otc_wps.jobs_pathname" class="py-name" href="#" onclick="return doclink('link-131', 'jobs_pathname', 'link-17');">jobs_pathname</a></tt><tt class="py-op">,</tt> <tt class="py-name">f</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt class="py-name">ftp_reader</tt><tt class="py-op">.</tt><tt class="py-name">write</tt><tt class="py-op">)</tt> </tt>
+<a name="L332"></a><tt class="py-lineno">332</tt>  <tt class="py-line">    <tt class="py-name">lines</tt> <tt class="py-op">=</tt> <tt class="py-name">ftp_reader</tt><tt class="py-op">.</tt><tt class="py-name">getvalue</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-string">"\n"</tt><tt class="py-op">)</tt> </tt>
+<a name="L333"></a><tt class="py-lineno">333</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt id="link-132" class="py-name" targets="Function src.drivers.otc_wps.lines_to_config()=src.drivers.otc_wps-module.html#lines_to_config"><a title="src.drivers.otc_wps.lines_to_config" class="py-name" href="#" onclick="return doclink('link-132', 'lines_to_config', 'link-132');">lines_to_config</a></tt><tt class="py-op">(</tt><tt class="py-name">lines</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L334"></a><tt class="py-lineno">334</tt>  <tt class="py-line"> </tt>
+<a name="L335"></a><tt class="py-lineno">335</tt>  <tt class="py-line"> </tt>
+<a name="lines_to_config"></a><div id="lines_to_config-def"><a name="L336"></a><tt class="py-lineno">336</tt> <a class="py-toggle" href="#" id="lines_to_config-toggle" onclick="return toggle('lines_to_config');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#lines_to_config">lines_to_config</a><tt class="py-op">(</tt><tt class="py-param">lines</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="lines_to_config-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="lines_to_config-expanded"><a name="L337"></a><tt class="py-lineno">337</tt>  <tt class="py-line">    <tt class="py-docstring">"""Convert string lines to config</tt> </tt>
+<a name="L338"></a><tt class="py-lineno">338</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L339"></a><tt class="py-lineno">339</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L340"></a><tt class="py-lineno">340</tt>  <tt class="py-line"><tt class="py-docstring">        lines {str[]} -- string list with the lines</tt> </tt>
+<a name="L341"></a><tt class="py-lineno">341</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L342"></a><tt class="py-lineno">342</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L343"></a><tt class="py-lineno">343</tt>  <tt class="py-line"><tt class="py-docstring">        dict -- configuration</tt> </tt>
+<a name="L344"></a><tt class="py-lineno">344</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L345"></a><tt class="py-lineno">345</tt>  <tt class="py-line"> </tt>
+<a name="L346"></a><tt class="py-lineno">346</tt>  <tt class="py-line">    <tt class="py-name">config</tt> <tt class="py-op">=</tt> <tt class="py-name">configparser</tt><tt class="py-op">.</tt><tt class="py-name">ConfigParser</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L347"></a><tt class="py-lineno">347</tt>  <tt class="py-line">    <tt class="py-name">config</tt><tt class="py-op">.</tt><tt class="py-name">optionxform</tt> <tt class="py-op">=</tt> <tt class="py-name">str</tt> </tt>
+<a name="L348"></a><tt class="py-lineno">348</tt>  <tt class="py-line"> </tt>
+<a name="L349"></a><tt class="py-lineno">349</tt>  <tt class="py-line">    <tt class="py-name">unilines</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L350"></a><tt class="py-lineno">350</tt>  <tt class="py-line"> </tt>
+<a name="L351"></a><tt class="py-lineno">351</tt>  <tt class="py-line">    <tt class="py-comment"># Parse shift-jis coding to unicode</tt> </tt>
+<a name="L352"></a><tt class="py-lineno">352</tt>  <tt class="py-line">    <tt class="py-keyword">for</tt> <tt class="py-name">line</tt> <tt class="py-keyword">in</tt> <tt class="py-name">lines</tt><tt class="py-op">:</tt> </tt>
+<a name="L353"></a><tt class="py-lineno">353</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L354"></a><tt class="py-lineno">354</tt>  <tt class="py-line">            <tt class="py-name">_t</tt> <tt class="py-op">=</tt> <tt class="py-string">u"{0}"</tt><tt class="py-op">.</tt><tt class="py-name">format</tt><tt class="py-op">(</tt><tt class="py-name">line</tt><tt class="py-op">)</tt><tt class="py-op">.</tt><tt class="py-name">upper</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L355"></a><tt class="py-lineno">355</tt>  <tt class="py-line">            <tt class="py-name">unilines</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt class="py-name">_t</tt><tt class="py-op">)</tt> </tt>
+<a name="L356"></a><tt class="py-lineno">356</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-name">BaseException</tt><tt class="py-op">:</tt> </tt>
+<a name="L357"></a><tt class="py-lineno">357</tt>  <tt class="py-line">            <tt class="py-keyword">continue</tt> </tt>
+<a name="L358"></a><tt class="py-lineno">358</tt>  <tt class="py-line"> </tt>
+<a name="L359"></a><tt class="py-lineno">359</tt>  <tt class="py-line">    <tt class="py-name">config</tt><tt class="py-op">.</tt><tt class="py-name">read_string</tt><tt class="py-op">(</tt><tt class="py-string">"\n"</tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-name">unilines</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L360"></a><tt class="py-lineno">360</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">config</tt> </tt>
+</div><a name="L361"></a><tt class="py-lineno">361</tt>  <tt class="py-line"> </tt>
+<a name="L362"></a><tt class="py-lineno">362</tt>  <tt class="py-line"> </tt>
+<a name="set_job_number"></a><div id="set_job_number-def"><a name="L363"></a><tt class="py-lineno">363</tt> <a class="py-toggle" href="#" id="set_job_number-toggle" onclick="return toggle('set_job_number');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#set_job_number">set_job_number</a><tt class="py-op">(</tt><tt class="py-param">data</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="set_job_number-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="set_job_number-expanded"><a name="L364"></a><tt class="py-lineno">364</tt>  <tt class="py-line">    <tt class="py-docstring">"""Set the current job number on the WPS</tt> </tt>
+<a name="L365"></a><tt class="py-lineno">365</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L366"></a><tt class="py-lineno">366</tt>  <tt class="py-line"><tt class="py-docstring">    Arguments:</tt> </tt>
+<a name="L367"></a><tt class="py-lineno">367</tt>  <tt class="py-line"><tt class="py-docstring">        data {SetJobNumber} -- set job number request object</tt> </tt>
+<a name="L368"></a><tt class="py-lineno">368</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L369"></a><tt class="py-lineno">369</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L370"></a><tt class="py-lineno">370</tt>  <tt class="py-line"><tt class="py-docstring">        EmptyResponse -- empty</tt> </tt>
+<a name="L371"></a><tt class="py-lineno">371</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L372"></a><tt class="py-lineno">372</tt>  <tt class="py-line"> </tt>
+<a name="L373"></a><tt class="py-lineno">373</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-133" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-133', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L374"></a><tt class="py-lineno">374</tt>  <tt class="py-line"> </tt>
+<a name="L375"></a><tt class="py-lineno">375</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-134" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-134', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L376"></a><tt class="py-lineno">376</tt>  <tt class="py-line">        <tt id="link-135" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-135', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-136" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-136', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"Can not set job number %s: not found"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L377"></a><tt class="py-lineno">377</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">SetJobNumberResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L378"></a><tt class="py-lineno">378</tt>  <tt class="py-line"> </tt>
+<a name="L379"></a><tt class="py-lineno">379</tt>  <tt class="py-line">    <tt id="link-137" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-137', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-138" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-138', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"Set job number: %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L380"></a><tt class="py-lineno">380</tt>  <tt class="py-line"> </tt>
+<a name="L381"></a><tt class="py-lineno">381</tt>  <tt class="py-line">    <tt class="py-comment"># create message and start the arc</tt> </tt>
+<a name="L382"></a><tt class="py-lineno">382</tt>  <tt class="py-line">    <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-name">bytearray</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L383"></a><tt class="py-lineno">383</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt id="link-139" class="py-name"><a title="src.drivers.hyundai_robot.Commands
+src.drivers.nachi_robot.Commands
+src.drivers.otc_wps.Commands" class="py-name" href="#" onclick="return doclink('link-139', 'Commands', 'link-87');">Commands</a></tt><tt class="py-op">.</tt><tt id="link-140" class="py-name"><a title="src.drivers.otc_wps.Commands.set_job_number
+src.drivers.otc_wps.set_job_number" class="py-name" href="#" onclick="return doclink('link-140', 'set_job_number', 'link-32');">set_job_number</a></tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L384"></a><tt class="py-lineno">384</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L385"></a><tt class="py-lineno">385</tt>  <tt class="py-line">    <tt class="py-comment"># append message to udp queue</tt> </tt>
+<a name="L386"></a><tt class="py-lineno">386</tt>  <tt class="py-line">    <tt id="link-141" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-141', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-142" class="py-name"><a title="src.drivers.misc.udp.UdpConnector.appendToQueue
+src.drivers.udp.UdpConnector.appendToQueue" class="py-name" href="#" onclick="return doclink('link-142', 'appendToQueue', 'link-90');">appendToQueue</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt class="py-string">"send_set_job_number"</tt><tt class="py-op">)</tt> </tt>
+<a name="L387"></a><tt class="py-lineno">387</tt>  <tt class="py-line"> </tt>
+<a name="L388"></a><tt class="py-lineno">388</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">SetJobNumberResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L389"></a><tt class="py-lineno">389</tt>  <tt class="py-line"> </tt>
+<a name="L390"></a><tt class="py-lineno">390</tt>  <tt class="py-line"> </tt>
+<a name="arc_start"></a><div id="arc_start-def"><a name="L391"></a><tt class="py-lineno">391</tt> <a class="py-toggle" href="#" id="arc_start-toggle" onclick="return toggle('arc_start');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#arc_start">arc_start</a><tt class="py-op">(</tt><tt class="py-param">data</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="arc_start-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="arc_start-expanded"><a name="L392"></a><tt class="py-lineno">392</tt>  <tt class="py-line">    <tt class="py-docstring">"""Start the arc on the WPS</tt> </tt>
+<a name="L393"></a><tt class="py-lineno">393</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L394"></a><tt class="py-lineno">394</tt>  <tt class="py-line"><tt class="py-docstring">    Keyword Arguments:</tt> </tt>
+<a name="L395"></a><tt class="py-lineno">395</tt>  <tt class="py-line"><tt class="py-docstring">        data {EmptyRequest} -- empty (default: {None})</tt> </tt>
+<a name="L396"></a><tt class="py-lineno">396</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L397"></a><tt class="py-lineno">397</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L398"></a><tt class="py-lineno">398</tt>  <tt class="py-line"><tt class="py-docstring">        EmptyResponse -- empty</tt> </tt>
+<a name="L399"></a><tt class="py-lineno">399</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L400"></a><tt class="py-lineno">400</tt>  <tt class="py-line"> </tt>
+<a name="L401"></a><tt class="py-lineno">401</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-143" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-143', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L402"></a><tt class="py-lineno">402</tt>  <tt class="py-line"> </tt>
+<a name="L403"></a><tt class="py-lineno">403</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt id="link-144" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-144', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L404"></a><tt class="py-lineno">404</tt>  <tt class="py-line">        <tt id="link-145" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-145', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L405"></a><tt class="py-lineno">405</tt>  <tt class="py-line">            <tt id="link-146" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-146', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L406"></a><tt class="py-lineno">406</tt>  <tt class="py-line">            <tt class="py-string">"Can not start arc with job number %s: not found"</tt> <tt class="py-op">%</tt> </tt>
+<a name="L407"></a><tt class="py-lineno">407</tt>  <tt class="py-line">            <tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L408"></a><tt class="py-lineno">408</tt>  <tt class="py-line">        <tt class="py-keyword">return</tt> <tt class="py-name">SetJobNumberResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L409"></a><tt class="py-lineno">409</tt>  <tt class="py-line"> </tt>
+<a name="L410"></a><tt class="py-lineno">410</tt>  <tt class="py-line">    <tt id="link-147" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-147', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-148" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-148', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"Arc start called: %s with job"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L411"></a><tt class="py-lineno">411</tt>  <tt class="py-line"> </tt>
+<a name="L412"></a><tt class="py-lineno">412</tt>  <tt class="py-line">    <tt class="py-comment"># create message and start the arc</tt> </tt>
+<a name="L413"></a><tt class="py-lineno">413</tt>  <tt class="py-line">    <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-name">bytearray</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L414"></a><tt class="py-lineno">414</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt id="link-149" class="py-name"><a title="src.drivers.hyundai_robot.Commands
+src.drivers.nachi_robot.Commands
+src.drivers.otc_wps.Commands" class="py-name" href="#" onclick="return doclink('link-149', 'Commands', 'link-87');">Commands</a></tt><tt class="py-op">.</tt><tt id="link-150" class="py-name"><a title="src.drivers.otc_wps.Commands.arc_start
+src.drivers.otc_wps.arc_start" class="py-name" href="#" onclick="return doclink('link-150', 'arc_start', 'link-29');">arc_start</a></tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L415"></a><tt class="py-lineno">415</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt class="py-name">data</tt><tt class="py-op">.</tt><tt class="py-name">value</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L416"></a><tt class="py-lineno">416</tt>  <tt class="py-line">    <tt class="py-comment"># append message to udp queue</tt> </tt>
+<a name="L417"></a><tt class="py-lineno">417</tt>  <tt class="py-line">    <tt id="link-151" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-151', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-152" class="py-name"><a title="src.drivers.misc.udp.UdpConnector.appendToQueue
+src.drivers.udp.UdpConnector.appendToQueue" class="py-name" href="#" onclick="return doclink('link-152', 'appendToQueue', 'link-90');">appendToQueue</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt class="py-string">"send_arc_start"</tt><tt class="py-op">)</tt> </tt>
+<a name="L418"></a><tt class="py-lineno">418</tt>  <tt class="py-line"> </tt>
+<a name="L419"></a><tt class="py-lineno">419</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">SetJobNumberResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L420"></a><tt class="py-lineno">420</tt>  <tt class="py-line"> </tt>
+<a name="L421"></a><tt class="py-lineno">421</tt>  <tt class="py-line"> </tt>
+<a name="arc_stop"></a><div id="arc_stop-def"><a name="L422"></a><tt class="py-lineno">422</tt> <a class="py-toggle" href="#" id="arc_stop-toggle" onclick="return toggle('arc_stop');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#arc_stop">arc_stop</a><tt class="py-op">(</tt><tt class="py-param">data</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="arc_stop-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="arc_stop-expanded"><a name="L423"></a><tt class="py-lineno">423</tt>  <tt class="py-line">    <tt class="py-docstring">"""Stop the arc on the WPS</tt> </tt>
+<a name="L424"></a><tt class="py-lineno">424</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L425"></a><tt class="py-lineno">425</tt>  <tt class="py-line"><tt class="py-docstring">    Keyword Arguments:</tt> </tt>
+<a name="L426"></a><tt class="py-lineno">426</tt>  <tt class="py-line"><tt class="py-docstring">        data {EmptyRequest} -- empty (default: {None})</tt> </tt>
+<a name="L427"></a><tt class="py-lineno">427</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L428"></a><tt class="py-lineno">428</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L429"></a><tt class="py-lineno">429</tt>  <tt class="py-line"><tt class="py-docstring">        EmptyResponse -- empty</tt> </tt>
+<a name="L430"></a><tt class="py-lineno">430</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L431"></a><tt class="py-lineno">431</tt>  <tt class="py-line"> </tt>
+<a name="L432"></a><tt class="py-lineno">432</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-153" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-153', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L433"></a><tt class="py-lineno">433</tt>  <tt class="py-line"> </tt>
+<a name="L434"></a><tt class="py-lineno">434</tt>  <tt class="py-line">    <tt class="py-comment"># create message and start the arc</tt> </tt>
+<a name="L435"></a><tt class="py-lineno">435</tt>  <tt class="py-line">    <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-name">bytearray</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L436"></a><tt class="py-lineno">436</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt id="link-154" class="py-name"><a title="src.drivers.hyundai_robot.Commands
+src.drivers.nachi_robot.Commands
+src.drivers.otc_wps.Commands" class="py-name" href="#" onclick="return doclink('link-154', 'Commands', 'link-87');">Commands</a></tt><tt class="py-op">.</tt><tt id="link-155" class="py-name"><a title="src.drivers.otc_wps.Commands.arc_stop
+src.drivers.otc_wps.arc_stop" class="py-name" href="#" onclick="return doclink('link-155', 'arc_stop', 'link-30');">arc_stop</a></tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L437"></a><tt class="py-lineno">437</tt>  <tt class="py-line"> </tt>
+<a name="L438"></a><tt class="py-lineno">438</tt>  <tt class="py-line">    <tt class="py-comment"># append message to udp queue</tt> </tt>
+<a name="L439"></a><tt class="py-lineno">439</tt>  <tt class="py-line">    <tt id="link-156" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-156', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-157" class="py-name"><a title="src.drivers.misc.udp.UdpConnector.appendToQueue
+src.drivers.udp.UdpConnector.appendToQueue" class="py-name" href="#" onclick="return doclink('link-157', 'appendToQueue', 'link-90');">appendToQueue</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt class="py-string">"send_arc_stop"</tt><tt class="py-op">)</tt> </tt>
+<a name="L440"></a><tt class="py-lineno">440</tt>  <tt class="py-line"> </tt>
+<a name="L441"></a><tt class="py-lineno">441</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">EmptyResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L442"></a><tt class="py-lineno">442</tt>  <tt class="py-line"> </tt>
+<a name="L443"></a><tt class="py-lineno">443</tt>  <tt class="py-line"> </tt>
+<a name="set_params"></a><div id="set_params-def"><a name="L444"></a><tt class="py-lineno">444</tt> <a class="py-toggle" href="#" id="set_params-toggle" onclick="return toggle('set_params');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#set_params">set_params</a><tt class="py-op">(</tt><tt class="py-param">data</tt><tt class="py-op">=</tt><tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="set_params-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="set_params-expanded"><a name="L445"></a><tt class="py-lineno">445</tt>  <tt class="py-line">    <tt class="py-docstring">"""Set WPS setpoint parameters</tt> </tt>
+<a name="L446"></a><tt class="py-lineno">446</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L447"></a><tt class="py-lineno">447</tt>  <tt class="py-line"><tt class="py-docstring">    Keyword Arguments:</tt> </tt>
+<a name="L448"></a><tt class="py-lineno">448</tt>  <tt class="py-line"><tt class="py-docstring">        data {SetWeldingParameters} -- config parameters (default: {None})</tt> </tt>
+<a name="L449"></a><tt class="py-lineno">449</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L450"></a><tt class="py-lineno">450</tt>  <tt class="py-line"><tt class="py-docstring">    Returns:</tt> </tt>
+<a name="L451"></a><tt class="py-lineno">451</tt>  <tt class="py-line"><tt class="py-docstring">        SetWeldingParametersResponse -- empty</tt> </tt>
+<a name="L452"></a><tt class="py-lineno">452</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L453"></a><tt class="py-lineno">453</tt>  <tt class="py-line"> </tt>
+<a name="L454"></a><tt class="py-lineno">454</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-158" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-158', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L455"></a><tt class="py-lineno">455</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-159" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-159', 'host', 'link-13');">host</a></tt> </tt>
+<a name="L456"></a><tt class="py-lineno">456</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-160" class="py-name"><a title="src.drivers.otc_wps.jobs_pathname" class="py-name" href="#" onclick="return doclink('link-160', 'jobs_pathname', 'link-17');">jobs_pathname</a></tt> </tt>
+<a name="L457"></a><tt class="py-lineno">457</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-161" class="py-name"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-161', 'current_job_idx', 'link-16');">current_job_idx</a></tt> </tt>
+<a name="L458"></a><tt class="py-lineno">458</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-162" class="py-name"><a title="src.drivers.otc_wps.is_arc_on" class="py-name" href="#" onclick="return doclink('link-162', 'is_arc_on', 'link-21');">is_arc_on</a></tt> </tt>
+<a name="L459"></a><tt class="py-lineno">459</tt>  <tt class="py-line"> </tt>
+<a name="L460"></a><tt class="py-lineno">460</tt>  <tt class="py-line">    <tt class="py-comment"># Update the job only if data is available</tt> </tt>
+<a name="L461"></a><tt class="py-lineno">461</tt>  <tt class="py-line">    <tt class="py-keyword">if</tt> <tt class="py-name">data</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L462"></a><tt class="py-lineno">462</tt>  <tt class="py-line">        <tt class="py-comment">#print data.params</tt> </tt>
+<a name="L463"></a><tt class="py-lineno">463</tt>  <tt class="py-line">        <tt id="link-163" class="py-name" targets="Function src.drivers.otc_wps.set_config()=src.drivers.otc_wps-module.html#set_config"><a title="src.drivers.otc_wps.set_config" class="py-name" href="#" onclick="return doclink('link-163', 'set_config', 'link-163');">set_config</a></tt><tt class="py-op">(</tt><tt class="py-name">data</tt><tt class="py-op">,</tt> <tt class="py-number">999</tt> <tt class="py-keyword">if</tt> <tt id="link-164" class="py-name"><a title="src.drivers.otc_wps.is_arc_on" class="py-name" href="#" onclick="return doclink('link-164', 'is_arc_on', 'link-21');">is_arc_on</a></tt> <tt class="py-keyword">else</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt> </tt>
+<a name="L464"></a><tt class="py-lineno">464</tt>  <tt class="py-line"> </tt>
+<a name="L465"></a><tt class="py-lineno">465</tt>  <tt class="py-line">    <tt class="py-comment"># create message and change job nr</tt> </tt>
+<a name="L466"></a><tt class="py-lineno">466</tt>  <tt class="py-line">    <tt class="py-name">msg</tt> <tt class="py-op">=</tt> <tt class="py-name">bytearray</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L467"></a><tt class="py-lineno">467</tt>  <tt class="py-line">    <tt class="py-name">msg</tt><tt class="py-op">.</tt><tt class="py-name">extend</tt><tt class="py-op">(</tt><tt class="py-name">pack</tt><tt class="py-op">(</tt><tt class="py-string">'&lt;i'</tt><tt class="py-op">,</tt> <tt id="link-165" class="py-name"><a title="src.drivers.hyundai_robot.Commands
+src.drivers.nachi_robot.Commands
+src.drivers.otc_wps.Commands" class="py-name" href="#" onclick="return doclink('link-165', 'Commands', 'link-87');">Commands</a></tt><tt class="py-op">.</tt><tt id="link-166" class="py-name"><a title="src.drivers.otc_wps.Commands.arc_update" class="py-name" href="#" onclick="return doclink('link-166', 'arc_update', 'link-31');">arc_update</a></tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-op">:</tt><tt class="py-op">:</tt><tt class="py-op">-</tt><tt class="py-number">1</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L468"></a><tt class="py-lineno">468</tt>  <tt class="py-line"> </tt>
+<a name="L469"></a><tt class="py-lineno">469</tt>  <tt class="py-line">    <tt class="py-comment"># append message to udp queue</tt> </tt>
+<a name="L470"></a><tt class="py-lineno">470</tt>  <tt class="py-line">    <tt id="link-167" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-167', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-168" class="py-name"><a title="src.drivers.misc.udp.UdpConnector.appendToQueue
+src.drivers.udp.UdpConnector.appendToQueue" class="py-name" href="#" onclick="return doclink('link-168', 'appendToQueue', 'link-90');">appendToQueue</a></tt><tt class="py-op">(</tt><tt class="py-name">msg</tt><tt class="py-op">,</tt> <tt class="py-string">"send_store"</tt><tt class="py-op">)</tt> </tt>
+<a name="L471"></a><tt class="py-lineno">471</tt>  <tt class="py-line"> </tt>
+<a name="L472"></a><tt class="py-lineno">472</tt>  <tt class="py-line">    <tt class="py-keyword">return</tt> <tt class="py-name">SetWeldingParametersResponse</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L473"></a><tt class="py-lineno">473</tt>  <tt class="py-line"> </tt>
+<a name="L474"></a><tt class="py-lineno">474</tt>  <tt class="py-line"> </tt>
+<a name="welding_config_publisher"></a><div id="welding_config_publisher-def"><a name="L475"></a><tt class="py-lineno">475</tt> <a class="py-toggle" href="#" id="welding_config_publisher-toggle" onclick="return toggle('welding_config_publisher');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#welding_config_publisher">welding_config_publisher</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="welding_config_publisher-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="welding_config_publisher-expanded"><a name="L476"></a><tt class="py-lineno">476</tt>  <tt class="py-line">    <tt class="py-docstring">"""Send welding config to ROS</tt> </tt>
+<a name="L477"></a><tt class="py-lineno">477</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L478"></a><tt class="py-lineno">478</tt>  <tt class="py-line"> </tt>
+<a name="L479"></a><tt class="py-lineno">479</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-169" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-169', 'jobs', 'link-15');">jobs</a></tt> </tt>
+<a name="L480"></a><tt class="py-lineno">480</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-170" class="py-name"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-170', 'current_job_idx', 'link-16');">current_job_idx</a></tt> </tt>
+<a name="L481"></a><tt class="py-lineno">481</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-171" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-171', 'name', 'link-27');">name</a></tt> </tt>
+<a name="L482"></a><tt class="py-lineno">482</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-172" class="py-name"><a title="src.drivers.otc_wps.auto_update" class="py-name" href="#" onclick="return doclink('link-172', 'auto_update', 'link-20');">auto_update</a></tt> </tt>
+<a name="L483"></a><tt class="py-lineno">483</tt>  <tt class="py-line">    <tt class="py-name">rate</tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Rate</tt><tt class="py-op">(</tt><tt class="py-number">1</tt><tt class="py-op">)</tt>  <tt class="py-comment"># 1hz</tt> </tt>
+<a name="L484"></a><tt class="py-lineno">484</tt>  <tt class="py-line">    <tt class="py-name">t</tt> <tt class="py-op">=</tt> <tt class="py-name">currentThread</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L485"></a><tt class="py-lineno">485</tt>  <tt class="py-line">    <tt class="py-keyword">while</tt> <tt class="py-keyword">not</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">is_shutdown</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> <tt class="py-keyword">and</tt> <tt class="py-name">getattr</tt><tt class="py-op">(</tt><tt class="py-name">t</tt><tt class="py-op">,</tt> <tt class="py-string">"do_run"</tt><tt class="py-op">,</tt> <tt class="py-name">True</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L486"></a><tt class="py-lineno">486</tt>  <tt class="py-line">        <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L487"></a><tt class="py-lineno">487</tt>  <tt class="py-line">            <tt class="py-name">old_jobs</tt> <tt class="py-op">=</tt> <tt class="py-name">deepcopy</tt><tt class="py-op">(</tt><tt id="link-173" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-173', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L488"></a><tt class="py-lineno">488</tt>  <tt class="py-line"> </tt>
+<a name="L489"></a><tt class="py-lineno">489</tt>  <tt class="py-line">            <tt id="link-174" class="py-name" targets="Function src.drivers.otc_wps.update_jobs()=src.drivers.otc_wps-module.html#update_jobs"><a title="src.drivers.otc_wps.update_jobs" class="py-name" href="#" onclick="return doclink('link-174', 'update_jobs', 'link-174');">update_jobs</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L490"></a><tt class="py-lineno">490</tt>  <tt class="py-line">            <tt class="py-name">changed</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L491"></a><tt class="py-lineno">491</tt>  <tt class="py-line"> </tt>
+<a name="L492"></a><tt class="py-lineno">492</tt>  <tt class="py-line">            <tt class="py-keyword">for</tt> <tt class="py-name">key</tt> <tt class="py-keyword">in</tt> <tt id="link-175" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-175', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L493"></a><tt class="py-lineno">493</tt>  <tt class="py-line">                <tt class="py-keyword">if</tt> <tt class="py-name">key</tt> <tt class="py-keyword">not</tt> <tt class="py-keyword">in</tt> <tt class="py-name">old_jobs</tt> <tt class="py-keyword">or</tt> <tt id="link-176" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-176', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">[</tt><tt class="py-name">key</tt><tt class="py-op">]</tt> <tt class="py-op">!=</tt> <tt class="py-name">old_jobs</tt><tt class="py-op">[</tt><tt class="py-name">key</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L494"></a><tt class="py-lineno">494</tt>  <tt class="py-line">                    <tt class="py-name">changed</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L495"></a><tt class="py-lineno">495</tt>  <tt class="py-line"> </tt>
+<a name="L496"></a><tt class="py-lineno">496</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">old_jobs</tt><tt class="py-op">)</tt> <tt class="py-op">!=</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt id="link-177" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-177', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">)</tt> <tt class="py-keyword">or</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">set</tt><tt class="py-op">(</tt><tt class="py-name">old_jobs</tt><tt class="py-op">.</tt><tt class="py-name">keys</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L497"></a><tt class="py-lineno">497</tt>  <tt class="py-line">                                                 <tt class="py-op">&amp;</tt> <tt class="py-name">set</tt><tt class="py-op">(</tt><tt id="link-178" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-178', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">.</tt><tt class="py-name">keys</tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> <tt class="py-op">!=</tt> <tt class="py-name">len</tt><tt class="py-op">(</tt><tt id="link-179" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-179', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">)</tt><tt class="py-keyword">or</tt> <tt class="py-name">changed</tt><tt class="py-op">:</tt> </tt>
+<a name="L498"></a><tt class="py-lineno">498</tt>  <tt class="py-line"> </tt>
+<a name="L499"></a><tt class="py-lineno">499</tt>  <tt class="py-line">                <tt class="py-name">config</tt> <tt class="py-op">=</tt> <tt class="py-name">WeldingJobs</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L500"></a><tt class="py-lineno">500</tt>  <tt class="py-line">                <tt class="py-name">config</tt><tt class="py-op">.</tt><tt class="py-name">configurations</tt> <tt class="py-op">=</tt> <tt class="py-op">[</tt><tt class="py-op">]</tt> </tt>
+<a name="L501"></a><tt class="py-lineno">501</tt>  <tt class="py-line"> </tt>
+<a name="L502"></a><tt class="py-lineno">502</tt>  <tt class="py-line">                <tt class="py-keyword">for</tt> <tt class="py-name">job</tt> <tt class="py-keyword">in</tt> <tt id="link-180" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-180', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">:</tt> </tt>
+<a name="L503"></a><tt class="py-lineno">503</tt>  <tt class="py-line">                    <tt class="py-name">config</tt><tt class="py-op">.</tt><tt class="py-name">configurations</tt><tt class="py-op">.</tt><tt class="py-name">append</tt><tt class="py-op">(</tt><tt id="link-181" class="py-name"><a title="src.drivers.otc_wps.jobs" class="py-name" href="#" onclick="return doclink('link-181', 'jobs', 'link-15');">jobs</a></tt><tt class="py-op">[</tt><tt class="py-name">job</tt><tt class="py-op">]</tt><tt class="py-op">)</tt> </tt>
+<a name="L504"></a><tt class="py-lineno">504</tt>  <tt class="py-line"> </tt>
+<a name="L505"></a><tt class="py-lineno">505</tt>  <tt class="py-line">                <tt class="py-name">config</tt><tt class="py-op">.</tt><tt class="py-name">current_index</tt> <tt class="py-op">=</tt> <tt id="link-182" class="py-name"><a title="src.drivers.otc_wps.current_job_idx" class="py-name" href="#" onclick="return doclink('link-182', 'current_job_idx', 'link-16');">current_job_idx</a></tt> </tt>
+<a name="L506"></a><tt class="py-lineno">506</tt>  <tt class="py-line">                <tt class="py-name">config</tt><tt class="py-op">.</tt><tt id="link-183" class="py-name"><a title="src.drivers.otc_wps.auto_update" class="py-name" href="#" onclick="return doclink('link-183', 'auto_update', 'link-20');">auto_update</a></tt> <tt class="py-op">=</tt> <tt id="link-184" class="py-name"><a title="src.drivers.otc_wps.auto_update" class="py-name" href="#" onclick="return doclink('link-184', 'auto_update', 'link-20');">auto_update</a></tt> </tt>
+<a name="L507"></a><tt class="py-lineno">507</tt>  <tt class="py-line"> </tt>
+<a name="L508"></a><tt class="py-lineno">508</tt>  <tt class="py-line">                <tt id="link-185" class="py-name"><a title="src.drivers.otc_wps.t_config" class="py-name" href="#" onclick="return doclink('link-185', 't_config', 'link-24');">t_config</a></tt><tt class="py-op">.</tt><tt id="link-186" class="py-name"><a title="src.drivers.misc.logger.publish" class="py-name" href="#" onclick="return doclink('link-186', 'publish', 'link-72');">publish</a></tt><tt class="py-op">(</tt><tt class="py-name">config</tt><tt class="py-op">)</tt> </tt>
+<a name="L509"></a><tt class="py-lineno">509</tt>  <tt class="py-line"> </tt>
+<a name="L510"></a><tt class="py-lineno">510</tt>  <tt class="py-line">        <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt> <tt class="py-keyword">as</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L511"></a><tt class="py-lineno">511</tt>  <tt class="py-line">            <tt class="py-name">exc_type</tt><tt class="py-op">,</tt> <tt class="py-name">exc_obj</tt><tt class="py-op">,</tt> <tt class="py-name">exc_tb</tt> <tt class="py-op">=</tt> <tt class="py-name">sys</tt><tt class="py-op">.</tt><tt class="py-name">exc_info</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L512"></a><tt class="py-lineno">512</tt>  <tt class="py-line">            <tt class="py-name">fname</tt> <tt class="py-op">=</tt> <tt class="py-name">os</tt><tt class="py-op">.</tt><tt class="py-name">path</tt><tt class="py-op">.</tt><tt class="py-name">split</tt><tt class="py-op">(</tt><tt class="py-name">exc_tb</tt><tt class="py-op">.</tt><tt class="py-name">tb_frame</tt><tt class="py-op">.</tt><tt class="py-name">f_code</tt><tt class="py-op">.</tt><tt class="py-name">co_filename</tt><tt class="py-op">)</tt><tt class="py-op">[</tt><tt class="py-number">1</tt><tt class="py-op">]</tt> </tt>
+<a name="L513"></a><tt class="py-lineno">513</tt>  <tt class="py-line">            <tt id="link-187" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-187', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-188" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-188', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"Config publish error: %s (%s: %d)"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">e</tt><tt class="py-op">,</tt> <tt class="py-name">fname</tt><tt class="py-op">,</tt> <tt class="py-name">exc_tb</tt><tt class="py-op">.</tt><tt class="py-name">tb_lineno</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-189" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-189', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-190" class="py-name"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-190', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L514"></a><tt class="py-lineno">514</tt>  <tt class="py-line"> </tt>
+<a name="L515"></a><tt class="py-lineno">515</tt>  <tt class="py-line">            <tt class="py-name">sys</tt><tt class="py-op">.</tt><tt class="py-name">exit</tt><tt class="py-op">(</tt><tt class="py-number">0</tt><tt class="py-op">)</tt> </tt>
+<a name="L516"></a><tt class="py-lineno">516</tt>  <tt class="py-line"> </tt>
+<a name="L517"></a><tt class="py-lineno">517</tt>  <tt class="py-line">        <tt class="py-name">rate</tt><tt class="py-op">.</tt><tt class="py-name">sleep</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L518"></a><tt class="py-lineno">518</tt>  <tt class="py-line"> </tt>
+<a name="L519"></a><tt class="py-lineno">519</tt>  <tt class="py-line">    <tt id="link-191" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-191', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-192" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-192', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"WPS config publisher stopped"</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L520"></a><tt class="py-lineno">520</tt>  <tt class="py-line"> </tt>
+<a name="L521"></a><tt class="py-lineno">521</tt>  <tt class="py-line"> </tt>
+<a name="ftp_connect"></a><div id="ftp_connect-def"><a name="L522"></a><tt class="py-lineno">522</tt> <a class="py-toggle" href="#" id="ftp_connect-toggle" onclick="return toggle('ftp_connect');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#ftp_connect">ftp_connect</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="ftp_connect-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="ftp_connect-expanded"><a name="L523"></a><tt class="py-lineno">523</tt>  <tt class="py-line">    <tt class="py-docstring">"""Initiate FTP connection to the robot</tt> </tt>
+<a name="L524"></a><tt class="py-lineno">524</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L525"></a><tt class="py-lineno">525</tt>  <tt class="py-line"> </tt>
+<a name="L526"></a><tt class="py-lineno">526</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-193" class="py-name"><a title="src.drivers.otc_wps.jobs_pathname" class="py-name" href="#" onclick="return doclink('link-193', 'jobs_pathname', 'link-17');">jobs_pathname</a></tt> </tt>
+<a name="L527"></a><tt class="py-lineno">527</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-194" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-194', 'ftp', 'link-18');">ftp</a></tt> </tt>
+<a name="L528"></a><tt class="py-lineno">528</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-195" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-195', 'host', 'link-13');">host</a></tt> </tt>
+<a name="L529"></a><tt class="py-lineno">529</tt>  <tt class="py-line"> </tt>
+<a name="L530"></a><tt class="py-lineno">530</tt>  <tt class="py-line">    <tt id="link-196" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-196', 'ftp', 'link-18');">ftp</a></tt> <tt class="py-op">=</tt> <tt class="py-name">FTP</tt><tt class="py-op">(</tt><tt id="link-197" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-197', 'host', 'link-13');">host</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L531"></a><tt class="py-lineno">531</tt>  <tt class="py-line">    <tt id="link-198" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-198', 'ftp', 'link-18');">ftp</a></tt><tt class="py-op">.</tt><tt class="py-name">login</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L532"></a><tt class="py-lineno">532</tt>  <tt class="py-line"> </tt>
+<a name="L533"></a><tt class="py-lineno">533</tt>  <tt class="py-line">    <tt id="link-199" class="py-name"><a title="src.drivers.otc_wps.ftp" class="py-name" href="#" onclick="return doclink('link-199', 'ftp', 'link-18');">ftp</a></tt><tt class="py-op">.</tt><tt class="py-name">cwd</tt><tt class="py-op">(</tt><tt id="link-200" class="py-name"><a title="src.drivers.otc_wps.jobs_pathname" class="py-name" href="#" onclick="return doclink('link-200', 'jobs_pathname', 'link-17');">jobs_pathname</a></tt><tt class="py-op">)</tt> </tt>
+</div><a name="L534"></a><tt class="py-lineno">534</tt>  <tt class="py-line"> </tt>
+<a name="L535"></a><tt class="py-lineno">535</tt>  <tt class="py-line"> </tt>
+<a name="init"></a><div id="init-def"><a name="L536"></a><tt class="py-lineno">536</tt> <a class="py-toggle" href="#" id="init-toggle" onclick="return toggle('init');">-</a><tt class="py-line"><tt class="py-keyword">def</tt> <a class="py-def-name" href="src.drivers.otc_wps-module.html#init">init</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="init-collapsed" style="display:none;" pad="+++" indent="++++"></div><div id="init-expanded"><a name="L537"></a><tt class="py-lineno">537</tt>  <tt class="py-line">    <tt class="py-docstring">"""Initalizes the WPS controller</tt> </tt>
+<a name="L538"></a><tt class="py-lineno">538</tt>  <tt class="py-line"><tt class="py-docstring"></tt> </tt>
+<a name="L539"></a><tt class="py-lineno">539</tt>  <tt class="py-line"><tt class="py-docstring">       Creates all variables required to control the wps.</tt> </tt>
+<a name="L540"></a><tt class="py-lineno">540</tt>  <tt class="py-line"><tt class="py-docstring">    """</tt> </tt>
+<a name="L541"></a><tt class="py-lineno">541</tt>  <tt class="py-line"> </tt>
+<a name="L542"></a><tt class="py-lineno">542</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-201" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-201', 'udp', 'link-7');">udp</a></tt> </tt>
+<a name="L543"></a><tt class="py-lineno">543</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-202" class="py-name"><a title="src.drivers.otc_wps.t_config" class="py-name" href="#" onclick="return doclink('link-202', 't_config', 'link-24');">t_config</a></tt> </tt>
+<a name="L544"></a><tt class="py-lineno">544</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-203" class="py-name"><a title="src.drivers.otc_wps.t_sp_params" class="py-name" href="#" onclick="return doclink('link-203', 't_sp_params', 'link-25');">t_sp_params</a></tt> </tt>
+<a name="L545"></a><tt class="py-lineno">545</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-204" class="py-name"><a title="src.drivers.otc_wps.t_current_params" class="py-name" href="#" onclick="return doclink('link-204', 't_current_params', 'link-26');">t_current_params</a></tt> </tt>
+<a name="L546"></a><tt class="py-lineno">546</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-205" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-205', 'host', 'link-13');">host</a></tt> </tt>
+<a name="L547"></a><tt class="py-lineno">547</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-206" class="py-name"><a title="src.drivers.nachi_robot.port
+src.drivers.otc_wps.port" class="py-name" href="#" onclick="return doclink('link-206', 'port', 'link-14');">port</a></tt> </tt>
+<a name="L548"></a><tt class="py-lineno">548</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-207" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-207', 'thread_state_update', 'link-10');">thread_state_update</a></tt> </tt>
+<a name="L549"></a><tt class="py-lineno">549</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-208" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-208', 'thread_config_update', 'link-9');">thread_config_update</a></tt> </tt>
+<a name="L550"></a><tt class="py-lineno">550</tt>  <tt class="py-line">    <tt class="py-keyword">global</tt> <tt id="link-209" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-209', 'name', 'link-27');">name</a></tt> </tt>
+<a name="L551"></a><tt class="py-lineno">551</tt>  <tt class="py-line"> </tt>
+<a name="L552"></a><tt class="py-lineno">552</tt>  <tt class="py-line">    <tt class="py-keyword">try</tt><tt class="py-op">:</tt> </tt>
+<a name="L553"></a><tt class="py-lineno">553</tt>  <tt class="py-line"> </tt>
+<a name="L554"></a><tt class="py-lineno">554</tt>  <tt class="py-line">        <tt id="link-210" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-210', 'host', 'link-13');">host</a></tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">get_param</tt><tt class="py-op">(</tt><tt class="py-string">"ip"</tt><tt class="py-op">)</tt> </tt>
+<a name="L555"></a><tt class="py-lineno">555</tt>  <tt class="py-line"> </tt>
+<a name="L556"></a><tt class="py-lineno">556</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-211" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-211', 'host', 'link-13');">host</a></tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L557"></a><tt class="py-lineno">557</tt>  <tt class="py-line">            <tt class="py-keyword">raise</tt> <tt class="py-name">Exception</tt><tt class="py-op">(</tt><tt class="py-string">"Please set the ip of the WPS: wps_ip"</tt><tt class="py-op">)</tt> </tt>
+<a name="L558"></a><tt class="py-lineno">558</tt>  <tt class="py-line"> </tt>
+<a name="L559"></a><tt class="py-lineno">559</tt>  <tt class="py-line">        <tt id="link-212" class="py-name"><a title="src.drivers.nachi_robot.port
+src.drivers.otc_wps.port" class="py-name" href="#" onclick="return doclink('link-212', 'port', 'link-14');">port</a></tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">get_param</tt><tt class="py-op">(</tt><tt class="py-string">"port"</tt><tt class="py-op">,</tt> <tt class="py-number">8002</tt><tt class="py-op">)</tt> </tt>
+<a name="L560"></a><tt class="py-lineno">560</tt>  <tt class="py-line">        <tt id="link-213" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-213', 'name', 'link-27');">name</a></tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">get_param</tt><tt class="py-op">(</tt><tt class="py-string">"wps_name"</tt><tt class="py-op">,</tt> <tt class="py-string">"welding_driver"</tt><tt class="py-op">)</tt> </tt>
+<a name="L561"></a><tt class="py-lineno">561</tt>  <tt class="py-line"> </tt>
+<a name="L562"></a><tt class="py-lineno">562</tt>  <tt class="py-line">        <tt class="py-comment"># init driver node</tt> </tt>
+<a name="L563"></a><tt class="py-lineno">563</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">init_node</tt><tt class="py-op">(</tt><tt id="link-214" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-214', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-name">anonymous</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L564"></a><tt class="py-lineno">564</tt>  <tt class="py-line"> </tt>
+<a name="L565"></a><tt class="py-lineno">565</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt class="py-op">(</tt><tt id="link-215" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-215', 'host', 'link-13');">host</a></tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt> <tt class="py-keyword">or</tt> <tt id="link-216" class="py-name"><a title="src.drivers.nachi_robot.port
+src.drivers.otc_wps.port" class="py-name" href="#" onclick="return doclink('link-216', 'port', 'link-14');">port</a></tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L566"></a><tt class="py-lineno">566</tt>  <tt class="py-line">            <tt id="link-217" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-217', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt> </tt>
+<a name="L567"></a><tt class="py-lineno">567</tt>  <tt class="py-line">                <tt id="link-218" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-218', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> </tt>
+<a name="L568"></a><tt class="py-lineno">568</tt>  <tt class="py-line">                <tt class="py-string">"Please set WPS ip and port through rosparam: wps_ip, wps_port"</tt><tt class="py-op">,</tt> </tt>
+<a name="L569"></a><tt class="py-lineno">569</tt>  <tt class="py-line">                <tt id="link-219" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-219', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-220" class="py-name"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-220', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L570"></a><tt class="py-lineno">570</tt>  <tt class="py-line">            <tt class="py-name">sys</tt><tt class="py-op">.</tt><tt class="py-name">exit</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L571"></a><tt class="py-lineno">571</tt>  <tt class="py-line"> </tt>
+<a name="L572"></a><tt class="py-lineno">572</tt>  <tt class="py-line">        <tt class="py-comment"># UDP handler</tt> </tt>
+<a name="L573"></a><tt class="py-lineno">573</tt>  <tt class="py-line">        <tt id="link-221" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-221', 'udp', 'link-7');">udp</a></tt> <tt class="py-op">=</tt> <tt id="link-222" class="py-name"><a title="src.drivers.misc.udp.UdpConnector
+src.drivers.udp.UdpConnector" class="py-name" href="#" onclick="return doclink('link-222', 'UdpConnector', 'link-8');">UdpConnector</a></tt><tt class="py-op">(</tt><tt id="link-223" class="py-name"><a title="src.drivers.hyundai_robot.host
+src.drivers.nachi_robot.host
+src.drivers.otc_wps.host" class="py-name" href="#" onclick="return doclink('link-223', 'host', 'link-13');">host</a></tt><tt class="py-op">,</tt> <tt id="link-224" class="py-name"><a title="src.drivers.nachi_robot.port
+src.drivers.otc_wps.port" class="py-name" href="#" onclick="return doclink('link-224', 'port', 'link-14');">port</a></tt><tt class="py-op">,</tt> <tt id="link-225" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-225', 'name', 'link-27');">name</a></tt><tt class="py-op">=</tt><tt id="link-226" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-226', 'name', 'link-27');">name</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L574"></a><tt class="py-lineno">574</tt>  <tt class="py-line"> </tt>
+<a name="L575"></a><tt class="py-lineno">575</tt>  <tt class="py-line">        <tt class="py-comment"># Connect to FTP with anonymus user</tt> </tt>
+<a name="L576"></a><tt class="py-lineno">576</tt>  <tt class="py-line">        <tt id="link-227" class="py-name" targets="Function src.drivers.otc_wps.ftp_connect()=src.drivers.otc_wps-module.html#ftp_connect"><a title="src.drivers.otc_wps.ftp_connect" class="py-name" href="#" onclick="return doclink('link-227', 'ftp_connect', 'link-227');">ftp_connect</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L577"></a><tt class="py-lineno">577</tt>  <tt class="py-line"> </tt>
+<a name="L578"></a><tt class="py-lineno">578</tt>  <tt class="py-line">        <tt class="py-comment"># define services and topics</tt> </tt>
+<a name="L579"></a><tt class="py-lineno">579</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Service</tt><tt class="py-op">(</tt><tt class="py-string">'edit_config'</tt><tt class="py-op">,</tt> <tt class="py-name">SetWeldingParameters</tt><tt class="py-op">,</tt> <tt id="link-228" class="py-name"><a title="src.drivers.otc_wps.set_config" class="py-name" href="#" onclick="return doclink('link-228', 'set_config', 'link-163');">set_config</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L580"></a><tt class="py-lineno">580</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Service</tt><tt class="py-op">(</tt><tt class="py-string">'set_job_number'</tt><tt class="py-op">,</tt> <tt class="py-name">SetJobNumber</tt><tt class="py-op">,</tt> <tt id="link-229" class="py-name"><a title="src.drivers.otc_wps.Commands.set_job_number
+src.drivers.otc_wps.set_job_number" class="py-name" href="#" onclick="return doclink('link-229', 'set_job_number', 'link-32');">set_job_number</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L581"></a><tt class="py-lineno">581</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Service</tt><tt class="py-op">(</tt><tt class="py-string">'set_params'</tt><tt class="py-op">,</tt> <tt class="py-name">SetWeldingParameters</tt><tt class="py-op">,</tt> <tt id="link-230" class="py-name" targets="Function src.drivers.otc_wps.set_params()=src.drivers.otc_wps-module.html#set_params"><a title="src.drivers.otc_wps.set_params" class="py-name" href="#" onclick="return doclink('link-230', 'set_params', 'link-230');">set_params</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L582"></a><tt class="py-lineno">582</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Service</tt><tt class="py-op">(</tt><tt class="py-string">'arc_start'</tt><tt class="py-op">,</tt> <tt class="py-name">SetJobNumber</tt><tt class="py-op">,</tt> <tt id="link-231" class="py-name"><a title="src.drivers.otc_wps.Commands.arc_start
+src.drivers.otc_wps.arc_start" class="py-name" href="#" onclick="return doclink('link-231', 'arc_start', 'link-29');">arc_start</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L583"></a><tt class="py-lineno">583</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Service</tt><tt class="py-op">(</tt><tt class="py-string">'arc_stop'</tt><tt class="py-op">,</tt> <tt class="py-name">Empty</tt><tt class="py-op">,</tt> <tt id="link-232" class="py-name"><a title="src.drivers.otc_wps.Commands.arc_stop
+src.drivers.otc_wps.arc_stop" class="py-name" href="#" onclick="return doclink('link-232', 'arc_stop', 'link-30');">arc_stop</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L584"></a><tt class="py-lineno">584</tt>  <tt class="py-line"> </tt>
+<a name="L585"></a><tt class="py-lineno">585</tt>  <tt class="py-line">        <tt id="link-233" class="py-name"><a title="src.drivers.otc_wps.t_config" class="py-name" href="#" onclick="return doclink('link-233', 't_config', 'link-24');">t_config</a></tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Publisher</tt><tt class="py-op">(</tt> </tt>
+<a name="L586"></a><tt class="py-lineno">586</tt>  <tt class="py-line">            <tt class="py-string">'jobs'</tt><tt class="py-op">,</tt> <tt class="py-name">WeldingJobs</tt><tt class="py-op">,</tt> <tt class="py-name">queue_size</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">,</tt> <tt class="py-name">latch</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L587"></a><tt class="py-lineno">587</tt>  <tt class="py-line">        <tt id="link-234" class="py-name"><a title="src.drivers.otc_wps.t_sp_params" class="py-name" href="#" onclick="return doclink('link-234', 't_sp_params', 'link-25');">t_sp_params</a></tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Publisher</tt><tt class="py-op">(</tt> </tt>
+<a name="L588"></a><tt class="py-lineno">588</tt>  <tt class="py-line">            <tt class="py-string">'current_set_points'</tt><tt class="py-op">,</tt> </tt>
+<a name="L589"></a><tt class="py-lineno">589</tt>  <tt class="py-line">            <tt class="py-name">WeldingState</tt><tt class="py-op">,</tt> </tt>
+<a name="L590"></a><tt class="py-lineno">590</tt>  <tt class="py-line">            <tt class="py-name">queue_size</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">,</tt> </tt>
+<a name="L591"></a><tt class="py-lineno">591</tt>  <tt class="py-line">            <tt class="py-name">latch</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L592"></a><tt class="py-lineno">592</tt>  <tt class="py-line">        <tt id="link-235" class="py-name"><a title="src.drivers.otc_wps.t_current_params" class="py-name" href="#" onclick="return doclink('link-235', 't_current_params', 'link-26');">t_current_params</a></tt> <tt class="py-op">=</tt> <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">Publisher</tt><tt class="py-op">(</tt> </tt>
+<a name="L593"></a><tt class="py-lineno">593</tt>  <tt class="py-line">            <tt class="py-string">'current_params'</tt><tt class="py-op">,</tt> <tt class="py-name">WeldingState</tt><tt class="py-op">,</tt> <tt class="py-name">queue_size</tt><tt class="py-op">=</tt><tt class="py-number">1</tt><tt class="py-op">,</tt> <tt class="py-name">latch</tt><tt class="py-op">=</tt><tt class="py-name">True</tt><tt class="py-op">)</tt> </tt>
+<a name="L594"></a><tt class="py-lineno">594</tt>  <tt class="py-line"> </tt>
+<a name="L595"></a><tt class="py-lineno">595</tt>  <tt class="py-line">        <tt id="link-236" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-236', 'thread_state_update', 'link-10');">thread_state_update</a></tt> <tt class="py-op">=</tt> <tt class="py-name">Thread</tt><tt class="py-op">(</tt><tt class="py-name">target</tt><tt class="py-op">=</tt><tt id="link-237" class="py-name" targets="Function src.drivers.otc_wps.wps_state_publisher()=src.drivers.otc_wps-module.html#wps_state_publisher"><a title="src.drivers.otc_wps.wps_state_publisher" class="py-name" href="#" onclick="return doclink('link-237', 'wps_state_publisher', 'link-237');">wps_state_publisher</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L596"></a><tt class="py-lineno">596</tt>  <tt class="py-line">        <tt id="link-238" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-238', 'thread_state_update', 'link-10');">thread_state_update</a></tt><tt class="py-op">.</tt><tt class="py-name">do_run</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L597"></a><tt class="py-lineno">597</tt>  <tt class="py-line">        <tt id="link-239" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-239', 'thread_state_update', 'link-10');">thread_state_update</a></tt><tt class="py-op">.</tt><tt id="link-240" class="py-name"><a title="src.drivers.mel_scanner.MEL_M2D_Driver.start
+src.drivers.uepsilon_scanner.uEpsilon_Driver.start" class="py-name" href="#" onclick="return doclink('link-240', 'start', 'link-102');">start</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L598"></a><tt class="py-lineno">598</tt>  <tt class="py-line"> </tt>
+<a name="L599"></a><tt class="py-lineno">599</tt>  <tt class="py-line">        <tt id="link-241" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-241', 'thread_config_update', 'link-9');">thread_config_update</a></tt> <tt class="py-op">=</tt> <tt class="py-name">Thread</tt><tt class="py-op">(</tt><tt class="py-name">target</tt><tt class="py-op">=</tt><tt id="link-242" class="py-name" targets="Function src.drivers.otc_wps.welding_config_publisher()=src.drivers.otc_wps-module.html#welding_config_publisher"><a title="src.drivers.otc_wps.welding_config_publisher" class="py-name" href="#" onclick="return doclink('link-242', 'welding_config_publisher', 'link-242');">welding_config_publisher</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L600"></a><tt class="py-lineno">600</tt>  <tt class="py-line">        <tt id="link-243" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-243', 'thread_config_update', 'link-9');">thread_config_update</a></tt><tt class="py-op">.</tt><tt class="py-name">do_run</tt> <tt class="py-op">=</tt> <tt class="py-name">True</tt> </tt>
+<a name="L601"></a><tt class="py-lineno">601</tt>  <tt class="py-line">        <tt id="link-244" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-244', 'thread_config_update', 'link-9');">thread_config_update</a></tt><tt class="py-op">.</tt><tt id="link-245" class="py-name"><a title="src.drivers.mel_scanner.MEL_M2D_Driver.start
+src.drivers.uepsilon_scanner.uEpsilon_Driver.start" class="py-name" href="#" onclick="return doclink('link-245', 'start', 'link-102');">start</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L602"></a><tt class="py-lineno">602</tt>  <tt class="py-line"> </tt>
+<a name="L603"></a><tt class="py-lineno">603</tt>  <tt class="py-line">        <tt id="link-246" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-246', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-247" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-247', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"OTC WPS - ready"</tt><tt class="py-op">)</tt> </tt>
+<a name="L604"></a><tt class="py-lineno">604</tt>  <tt class="py-line"> </tt>
+<a name="L605"></a><tt class="py-lineno">605</tt>  <tt class="py-line">        <tt class="py-comment"># Wait for service calls or user interruption</tt> </tt>
+<a name="L606"></a><tt class="py-lineno">606</tt>  <tt class="py-line">        <tt class="py-name">rospy</tt><tt class="py-op">.</tt><tt class="py-name">spin</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L607"></a><tt class="py-lineno">607</tt>  <tt class="py-line">    <tt class="py-keyword">except</tt> <tt class="py-name">Exception</tt> <tt class="py-keyword">as</tt> <tt class="py-name">e</tt><tt class="py-op">:</tt> </tt>
+<a name="L608"></a><tt class="py-lineno">608</tt>  <tt class="py-line">        <tt id="link-248" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-248', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt id="link-249" class="py-name"><a title="src.drivers.hyundai_robot.name
+src.drivers.misc.dumper.name
+src.drivers.move_it_robot.name
+src.drivers.nachi_robot.name
+src.drivers.otc_wps.name" class="py-name" href="#" onclick="return doclink('link-249', 'name', 'link-27');">name</a></tt><tt class="py-op">,</tt> <tt class="py-string">"OTC WPS Error: %s"</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">str</tt><tt class="py-op">(</tt><tt class="py-name">e</tt><tt class="py-op">)</tt><tt class="py-op">)</tt><tt class="py-op">,</tt> <tt id="link-250" class="py-name"><a title="src.drivers.misc.status.STATE" class="py-name" href="#" onclick="return doclink('link-250', 'STATE', 'link-3');">STATE</a></tt><tt class="py-op">.</tt><tt id="link-251" class="py-name"><a title="src.drivers.misc.status.STATE.ERROR" class="py-name" href="#" onclick="return doclink('link-251', 'ERROR', 'link-46');">ERROR</a></tt><tt class="py-op">)</tt> </tt>
+<a name="L609"></a><tt class="py-lineno">609</tt>  <tt class="py-line"> </tt>
+<a name="L610"></a><tt class="py-lineno">610</tt>  <tt class="py-line">    <tt class="py-keyword">finally</tt><tt class="py-op">:</tt> </tt>
+<a name="L611"></a><tt class="py-lineno">611</tt>  <tt class="py-line">        <tt id="link-252" class="py-name"><a title="src.drivers.hyundai_robot.udp
+src.drivers.misc.udp
+src.drivers.nachi_robot.udp
+src.drivers.otc_wps.udp
+src.drivers.udp" class="py-name" href="#" onclick="return doclink('link-252', 'udp', 'link-7');">udp</a></tt><tt class="py-op">.</tt><tt id="link-253" class="py-name" targets="Method src.drivers.misc.udp.UdpConnector.stopConsumeThread()=src.drivers.misc.udp.UdpConnector-class.html#stopConsumeThread,Method src.drivers.udp.UdpConnector.stopConsumeThread()=src.drivers.udp.UdpConnector-class.html#stopConsumeThread"><a title="src.drivers.misc.udp.UdpConnector.stopConsumeThread
+src.drivers.udp.UdpConnector.stopConsumeThread" class="py-name" href="#" onclick="return doclink('link-253', 'stopConsumeThread', 'link-253');">stopConsumeThread</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L612"></a><tt class="py-lineno">612</tt>  <tt class="py-line"> </tt>
+<a name="L613"></a><tt class="py-lineno">613</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-254" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-254', 'thread_state_update', 'link-10');">thread_state_update</a></tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L614"></a><tt class="py-lineno">614</tt>  <tt class="py-line">            <tt id="link-255" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-255', 'thread_state_update', 'link-10');">thread_state_update</a></tt><tt class="py-op">.</tt><tt class="py-name">do_run</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L615"></a><tt class="py-lineno">615</tt>  <tt class="py-line">            <tt id="link-256" class="py-name"><a title="src.drivers.otc_wps.thread_state_update" class="py-name" href="#" onclick="return doclink('link-256', 'thread_state_update', 'link-10');">thread_state_update</a></tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L616"></a><tt class="py-lineno">616</tt>  <tt class="py-line"> </tt>
+<a name="L617"></a><tt class="py-lineno">617</tt>  <tt class="py-line">        <tt class="py-keyword">if</tt> <tt id="link-257" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-257', 'thread_config_update', 'link-9');">thread_config_update</a></tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L618"></a><tt class="py-lineno">618</tt>  <tt class="py-line">            <tt id="link-258" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-258', 'thread_config_update', 'link-9');">thread_config_update</a></tt><tt class="py-op">.</tt><tt class="py-name">do_run</tt> <tt class="py-op">=</tt> <tt class="py-name">False</tt> </tt>
+<a name="L619"></a><tt class="py-lineno">619</tt>  <tt class="py-line">            <tt id="link-259" class="py-name"><a title="src.drivers.otc_wps.thread_config_update" class="py-name" href="#" onclick="return doclink('link-259', 'thread_config_update', 'link-9');">thread_config_update</a></tt><tt class="py-op">.</tt><tt class="py-name">join</tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L620"></a><tt class="py-lineno">620</tt>  <tt class="py-line"> </tt>
+<a name="L621"></a><tt class="py-lineno">621</tt>  <tt class="py-line">        <tt id="link-260" class="py-name"><a title="src.drivers.misc.status
+src.drivers.misc.status.status" class="py-name" href="#" onclick="return doclink('link-260', 'status', 'link-2');">status</a></tt><tt class="py-op">(</tt><tt class="py-string">"welding_driver"</tt><tt class="py-op">,</tt> <tt class="py-string">"OTC WPS - stopped"</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L622"></a><tt class="py-lineno">622</tt>  <tt class="py-line"> </tt>
+<a name="L623"></a><tt class="py-lineno">623</tt>  <tt class="py-line"> </tt>
+<a name="L624"></a><tt class="py-lineno">624</tt>  <tt class="py-line"><tt class="py-keyword">if</tt> <tt class="py-name">__name__</tt> <tt class="py-op">==</tt> <tt class="py-string">"__main__"</tt><tt class="py-op">:</tt> </tt>
+<a name="L625"></a><tt class="py-lineno">625</tt>  <tt class="py-line">    <tt id="link-261" class="py-name" targets="Function src.drivers.hyundai_robot.init()=src.drivers.hyundai_robot-module.html#init,Function src.drivers.misc.dumper.init()=src.drivers.misc.dumper-module.html#init,Function src.drivers.move_it_robot.init()=src.drivers.move_it_robot-module.html#init,Function src.drivers.nachi_robot.init()=src.drivers.nachi_robot-module.html#init,Function src.drivers.otc_wps.init()=src.drivers.otc_wps-module.html#init"><a title="src.drivers.hyundai_robot.init
+src.drivers.misc.dumper.init
+src.drivers.move_it_robot.init
+src.drivers.nachi_robot.init
+src.drivers.otc_wps.init" class="py-name" href="#" onclick="return doclink('link-261', 'init', 'link-261');">init</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L626"></a><tt class="py-lineno">626</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="src.drivers-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1
+    on Thu Feb 28 20:20:34 2019
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

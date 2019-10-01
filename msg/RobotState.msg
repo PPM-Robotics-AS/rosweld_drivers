@@ -1,0 +1,11 @@
+geometry_msgs/Pose pose
+float32[] joints
+EulerAngles euler_angles
+int32 step
+int32 speed
+int32 storedPoses
+string robotProgramState
+string mode
+bool isMoving
+bool isSimulation
+string error

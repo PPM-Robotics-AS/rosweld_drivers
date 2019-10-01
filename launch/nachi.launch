@@ -1,0 +1,17 @@
+<launch>
+
+    <arg name="update_port" default="8001" />  
+    <arg name="command_port" default="8000" />  
+    <arg name="ip"/>
+    <arg name="robot_name"/>
+
+    <param name="robot_ip" value="$(arg ip)"/>
+    <param name="robot_update_port" value="$(arg update_port)"/>
+    <param name="robot_command_port" value="$(arg command_port)"/>
+    <param name="robot_name" value="$(arg robot_name)"/>
+
+    <node respawn="true" pkg="rosweld_drivers" name="nachi_robot" type="nachi.sh" output="screen" >
+        
+    </node>
+    
+</launch>
